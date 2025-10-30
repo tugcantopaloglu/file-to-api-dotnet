@@ -84,14 +84,17 @@ Configure JWT token settings for authenticated sessions:
 ```json
 {
   "FileStorage": {
-    "RootPath": "Files",
+    "RootPath": "C:\\SharedFiles",
     "MaxFileSize": 52428800,
     "AllowedExtensions": [".png", ".jpg", ".jpeg", ".gif", ".pdf", ".txt", ".json"]
   }
 }
 ```
 
-- `RootPath`: Directory where files are stored (read-only access)
+- `RootPath`: Directory where files are stored (supports both absolute and relative paths)
+  - **Absolute path**: `C:\\SharedFiles` or `D:\\Data\\Files`
+  - **Relative path**: `Files` (relative to application directory)
+  - **UNC path**: `\\\\ServerName\\SharedFolder\\Files`
 - `MaxFileSize`: Not applicable for read-only API (kept for compatibility)
 - `AllowedExtensions`: Not applicable for read-only API (kept for compatibility)
 
@@ -308,21 +311,131 @@ dotnet run --project src/FileToApi
 
 ## Production Deployment
 
-1. Deploy on Windows Server joined to your Active Directory domain
-2. Update `appsettings.json` with production settings:
-   - Configure your Active Directory domain settings
-   - Generate a strong JWT secret key (min 32 characters)
-   - Enable authentication
-3. Set appropriate CORS policies (restrict to specific origins)
-4. Configure HTTPS certificates
-5. Ensure the application pool identity has permissions to query Active Directory
-6. Consider using a network file share or cloud storage instead of local file storage
+### IIS Deployment
 
-### Publishing
+#### Prerequisites
+1. Windows Server joined to your Active Directory domain
+2. IIS installed with ASP.NET Core Hosting Bundle
+3. .NET 8.0 Runtime installed
+4. Shared folder or drive configured for file storage
+
+#### Step 1: Publish the Application
 
 ```bash
 dotnet publish -c Release -o ./publish
 ```
+
+#### Step 2: Prepare the File Storage Directory
+
+Create your file storage directory and set permissions:
+
+```powershell
+# Create directory
+New-Item -Path "D:\SharedFiles" -ItemType Directory
+
+# Grant IIS AppPool identity read permissions
+icacls "D:\SharedFiles" /grant "IIS AppPool\YourAppPoolName:(OI)(CI)R"
+```
+
+#### Step 3: Configure appsettings.Production.json
+
+Edit `appsettings.Production.json` in the publish folder:
+
+```json
+{
+  "FileStorage": {
+    "RootPath": "D:\\SharedFiles"
+  },
+  "ActiveDirectory": {
+    "Domain": "yourdomain.local",
+    "LdapPath": "LDAP://dc01.yourdomain.local",
+    "Container": "DC=yourdomain,DC=local"
+  },
+  "JwtSettings": {
+    "SecretKey": "your-production-secret-key-at-least-32-characters"
+  }
+}
+```
+
+#### Step 4: Create IIS Application
+
+1. Open IIS Manager
+2. Create a new Application Pool:
+   - Name: `FileToApiAppPool`
+   - .NET CLR Version: No Managed Code
+   - Managed Pipeline Mode: Integrated
+   - Identity: Custom account with AD query permissions (or ApplicationPoolIdentity)
+3. Create a new Website or Application:
+   - Physical path: Point to your publish folder
+   - Application Pool: Select `FileToApiAppPool`
+   - Binding: Configure HTTPS binding
+
+#### Step 5: Configure Application Pool Identity
+
+For Active Directory authentication, the Application Pool identity needs AD permissions:
+
+**Option 1: Use a domain service account**
+```powershell
+# In IIS Manager, set Application Pool Identity to:
+# Custom Account -> domain\serviceaccount
+```
+
+**Option 2: Grant ApplicationPoolIdentity AD permissions**
+```powershell
+# Add computer account to AD users group with query permissions
+```
+
+#### Step 6: Set Folder Permissions
+
+```powershell
+# Grant IIS AppPool read access to publish folder
+icacls "C:\inetpub\wwwroot\FileToApi" /grant "IIS AppPool\FileToApiAppPool:(OI)(CI)RX"
+
+# Grant read access to shared files
+icacls "D:\SharedFiles" /grant "IIS AppPool\FileToApiAppPool:(OI)(CI)R"
+```
+
+#### Step 7: Configure web.config (already included)
+
+The `web.config` is included and pre-configured. You can modify it if needed:
+
+```xml
+<aspNetCore processPath="dotnet"
+            arguments=".\FileToApi.dll"
+            stdoutLogEnabled="true"
+            stdoutLogFile=".\logs\stdout"
+            hostingModel="inprocess">
+  <environmentVariables>
+    <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
+  </environmentVariables>
+</aspNetCore>
+```
+
+#### Step 8: Test the Deployment
+
+1. Browse to `https://your-server/api/auth/status`
+2. Check logs in `.\logs\` folder if issues occur
+3. Verify file access: `https://your-server/api/files`
+
+### Configuration via web.config
+
+You can override appsettings.json values in web.config:
+
+```xml
+<environmentVariables>
+  <environmentVariable name="FileStorage__RootPath" value="D:\SharedFiles" />
+  <environmentVariable name="Authentication__Enabled" value="true" />
+  <environmentVariable name="ActiveDirectory__Domain" value="yourdomain.local" />
+</environmentVariables>
+```
+
+### Troubleshooting IIS Deployment
+
+- **500.19 Error**: Check web.config syntax and install ASP.NET Core Hosting Bundle
+- **500.30 Error**: Verify .NET 8.0 Runtime is installed
+- **403 Forbidden**: Check Application Pool identity has permissions
+- **AD Authentication Fails**: Ensure AppPool identity can query Active Directory
+- **File Not Found**: Verify RootPath exists and has correct permissions
 
 ## Security Considerations
 

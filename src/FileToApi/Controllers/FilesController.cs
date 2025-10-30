@@ -18,20 +18,20 @@ public class FilesController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAllFiles()
-    {
-        try
-        {
-            var files = await _fileService.GetAllFilesAsync();
-            return Ok(files);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving files");
-            return StatusCode(500, "An error occurred while retrieving files");
-        }
-    }
+    //[HttpGet]
+    //public async Task<IActionResult> GetAllFiles()
+    //{
+    //    try
+    //    {
+    //        var files = await _fileService.GetAllFilesAsync();
+    //        return Ok(files);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Error retrieving files");
+    //        return StatusCode(500, "An error occurred while retrieving files");
+    //    }
+    //}
 
     [HttpGet("{*filePath}")]
     public async Task<IActionResult> GetFile(string filePath)
@@ -44,7 +44,23 @@ public class FilesController : ControllerBase
         if (filePath.EndsWith("/metadata", StringComparison.OrdinalIgnoreCase))
         {
             var actualPath = filePath.Substring(0, filePath.Length - "/metadata".Length);
-            return await GetFileMetadataInternal(actualPath);
+
+            try
+            {
+                var metadata = await _fileService.GetFileMetadataAsync(actualPath);
+
+                if (metadata == null)
+                {
+                    return NotFound(new { message = "File not found" });
+                }
+
+                return Ok(metadata);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving file metadata: {FilePath}", actualPath);
+                return StatusCode(500, "An error occurred while retrieving file metadata");
+            }
         }
 
         try
@@ -66,23 +82,23 @@ public class FilesController : ControllerBase
         }
     }
 
-    private async Task<IActionResult> GetFileMetadataInternal(string filePath)
-    {
-        try
-        {
-            var metadata = await _fileService.GetFileMetadataAsync(filePath);
+    //private async Task<IActionResult> GetFileMetadataInternal(string filePath)
+    //{
+    //    try
+    //    {
+    //        var metadata = await _fileService.GetFileMetadataAsync(filePath);
 
-            if (metadata == null)
-            {
-                return NotFound(new { message = "File not found" });
-            }
+    //        if (metadata == null)
+    //        {
+    //            return NotFound(new { message = "File not found" });
+    //        }
 
-            return Ok(metadata);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving file metadata: {FilePath}", filePath);
-            return StatusCode(500, "An error occurred while retrieving file metadata");
-        }
-    }
+    //        return Ok(metadata);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Error retrieving file metadata: {FilePath}", filePath);
+    //        return StatusCode(500, "An error occurred while retrieving file metadata");
+    //    }
+    //}
 }

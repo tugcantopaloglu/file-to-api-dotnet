@@ -13,12 +13,31 @@ public class FileService : IFileService
     {
         _settings = settings.Value;
         _logger = logger;
-        _storagePath = Path.Combine(Directory.GetCurrentDirectory(), _settings.RootPath);
+
+        if (Path.IsPathRooted(_settings.RootPath))
+        {
+            _storagePath = _settings.RootPath;
+        }
+        else
+        {
+            _storagePath = Path.Combine(Directory.GetCurrentDirectory(), _settings.RootPath);
+        }
 
         if (!Directory.Exists(_storagePath))
         {
-            Directory.CreateDirectory(_storagePath);
+            try
+            {
+                Directory.CreateDirectory(_storagePath);
+                _logger.LogInformation("Created storage directory: {StoragePath}", _storagePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create storage directory: {StoragePath}", _storagePath);
+                throw;
+            }
         }
+
+        _logger.LogInformation("File storage initialized at: {StoragePath}", _storagePath);
     }
 
     public async Task<List<FileMetadata>> GetAllFilesAsync()
