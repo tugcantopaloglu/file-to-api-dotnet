@@ -1,12 +1,54 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\Users\\Administrator\\Desktop\\git\\file-to-api-dotnet\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{5892C8E4-E366-4E9D-8420-0EA5930EB1B9}|src\\FileToApi\\FileToApi.csproj|c:\\users\\administrator\\desktop\\git\\file-to-api-dotnet\\src\\filetoapi\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{5892C8E4-E366-4E9D-8420-0EA5930EB1B9}|src\\FileToApi\\FileToApi.csproj|solutionrelative:src\\filetoapi\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5892C8E4-E366-4E9D-8420-0EA5930EB1B9}|src\\FileToApi\\FileToApi.csproj|c:\\users\\administrator\\desktop\\git\\file-to-api-dotnet\\src\\filetoapi\\controllers\\filescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5892C8E4-E366-4E9D-8420-0EA5930EB1B9}|src\\FileToApi\\FileToApi.csproj|solutionrelative:src\\filetoapi\\controllers\\filescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\git\\file-to-api-dotnet\\src\\FileToApi\\appsettings.json",
+              "RelativeDocumentMoniker": "src\\FileToApi\\appsettings.json",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\git\\file-to-api-dotnet\\src\\FileToApi\\appsettings.json",
+              "RelativeToolTip": "src\\FileToApi\\appsettings.json",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABQAAAAcAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-10-30T07:35:43.004Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "FilesController.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Desktop\\git\\file-to-api-dotnet\\src\\FileToApi\\Controllers\\FilesController.cs",
+              "RelativeDocumentMoniker": "src\\FileToApi\\Controllers\\FilesController.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Desktop\\git\\file-to-api-dotnet\\src\\FileToApi\\Controllers\\FilesController.cs",
+              "RelativeToolTip": "src\\FileToApi\\Controllers\\FilesController.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABAAAAAjAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-10-30T07:34:20.345Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }
