@@ -52,3 +52,8 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# File Storage (exclude uploaded files, keep README)
+src/FileToApi/Files/*
+!src/FileToApi/Files/README.txt
+!src/FileToApi/Files/.gitkeep
