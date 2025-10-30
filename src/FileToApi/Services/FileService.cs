@@ -102,6 +102,48 @@ public class FileService : IFileService
         return null;
     }
 
+    public async Task<(string base64Data, string contentType, string fileName)?> GetFileAsBase64Async(string fileName)
+    {
+        var sanitizedPath = SanitizePath(fileName);
+        var filePath = Path.Combine(_storagePath, sanitizedPath);
+        string? actualFilePath = null;
+        string? actualFileName = fileName;
+
+        // Check if file exists with exact path first
+        if (IsPathSafe(filePath) && File.Exists(filePath))
+        {
+            actualFilePath = filePath;
+        }
+        // If file doesn't exist and has no extension, try with allowed extensions
+        else if (IsPathSafe(filePath) && string.IsNullOrEmpty(Path.GetExtension(fileName)))
+        {
+            foreach (var extension in _settings.AllowedExtensions)
+            {
+                var filePathWithExtension = filePath + extension;
+
+                if (IsPathSafe(filePathWithExtension) && File.Exists(filePathWithExtension))
+                {
+                    actualFilePath = filePathWithExtension;
+                    actualFileName = fileName + extension;
+                    _logger.LogInformation("File found with auto-detected extension: {Extension} for {FileName}", extension, fileName);
+                    break;
+                }
+            }
+        }
+
+        if (actualFilePath == null)
+        {
+            return null;
+        }
+
+        var bytes = await File.ReadAllBytesAsync(actualFilePath);
+        var base64Data = Convert.ToBase64String(bytes);
+        var contentType = GetContentType(actualFileName);
+        var fileNameOnly = Path.GetFileName(actualFileName);
+
+        return (base64Data, contentType, fileNameOnly);
+    }
+
     public async Task<string> UploadFileAsync(IFormFile file)
     {
         if (file.Length == 0)

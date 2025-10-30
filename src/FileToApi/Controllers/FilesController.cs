@@ -7,8 +7,8 @@ namespace FileToApi.Controllers;
 
 [ApiController]
 [Route("img")]
-[ConditionalAuthorize]
-[Authorize(Policy = "UserGroupPolicy")]
+/*[ConditionalAuthorize]
+[Authorize(Policy = "UserGroupPolicy")]*/
 public class FilesController : ControllerBase
 {
     private readonly IFileService _fileService;
@@ -62,6 +62,33 @@ public class FilesController : ControllerBase
             {
                 _logger.LogError(ex, "Error retrieving file metadata: {FilePath}", actualPath);
                 return StatusCode(500, "An error occurred while retrieving file metadata");
+            }
+        }
+
+        if (filePath.EndsWith("/base64", StringComparison.OrdinalIgnoreCase))
+        {
+            var actualPath = filePath.Substring(0, filePath.Length - "/base64".Length);
+
+            try
+            {
+                var result = await _fileService.GetFileAsBase64Async(actualPath);
+
+                if (result == null)
+                {
+                    return NotFound(new { message = "File not found" });
+                }
+
+                return Ok(new
+                {
+                    fileName = result.Value.fileName,
+                    contentType = result.Value.contentType,
+                    base64Data = result.Value.base64Data
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving file as base64: {FilePath}", actualPath);
+                return StatusCode(500, "An error occurred while retrieving the file");
             }
         }
 
