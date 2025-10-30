@@ -33,33 +33,44 @@ public class FilesController : ControllerBase
         }
     }
 
-    [HttpGet("{fileName}")]
-    public async Task<IActionResult> GetFile(string fileName)
+    [HttpGet("{*filePath}")]
+    public async Task<IActionResult> GetFile(string filePath)
     {
+        if (string.IsNullOrEmpty(filePath))
+        {
+            return BadRequest(new { message = "File path is required" });
+        }
+
+        if (filePath.EndsWith("/metadata", StringComparison.OrdinalIgnoreCase))
+        {
+            var actualPath = filePath.Substring(0, filePath.Length - "/metadata".Length);
+            return await GetFileMetadataInternal(actualPath);
+        }
+
         try
         {
-            var result = await _fileService.GetFileAsync(fileName);
+            var result = await _fileService.GetFileAsync(filePath);
 
             if (result == null)
             {
                 return NotFound(new { message = "File not found" });
             }
 
+            var fileName = Path.GetFileName(filePath);
             return File(result.Value.content, result.Value.contentType, fileName);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving file: {FileName}", fileName);
+            _logger.LogError(ex, "Error retrieving file: {FilePath}", filePath);
             return StatusCode(500, "An error occurred while retrieving the file");
         }
     }
 
-    [HttpGet("{fileName}/metadata")]
-    public async Task<IActionResult> GetFileMetadata(string fileName)
+    private async Task<IActionResult> GetFileMetadataInternal(string filePath)
     {
         try
         {
-            var metadata = await _fileService.GetFileMetadataAsync(fileName);
+            var metadata = await _fileService.GetFileMetadataAsync(filePath);
 
             if (metadata == null)
             {
@@ -70,7 +81,7 @@ public class FilesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving file metadata: {FileName}", fileName);
+            _logger.LogError(ex, "Error retrieving file metadata: {FilePath}", filePath);
             return StatusCode(500, "An error occurred while retrieving file metadata");
         }
     }

@@ -30,34 +30,32 @@ public class FileService : IFileService
             return files;
         }
 
-        var fileInfos = new DirectoryInfo(_storagePath).GetFiles();
-
-        foreach (var fileInfo in fileInfos)
-        {
-            files.Add(CreateFileMetadata(fileInfo));
-        }
+        GetFilesRecursive(_storagePath, _storagePath, files);
 
         return await Task.FromResult(files);
     }
 
     public async Task<FileMetadata?> GetFileMetadataAsync(string fileName)
     {
-        var filePath = Path.Combine(_storagePath, fileName);
+        var sanitizedPath = SanitizePath(fileName);
+        var filePath = Path.Combine(_storagePath, sanitizedPath);
 
-        if (!File.Exists(filePath))
+        if (!IsPathSafe(filePath) || !File.Exists(filePath))
         {
             return null;
         }
 
         var fileInfo = new FileInfo(filePath);
-        return await Task.FromResult(CreateFileMetadata(fileInfo));
+        var relativePath = GetRelativePath(_storagePath, filePath);
+        return await Task.FromResult(CreateFileMetadata(fileInfo, relativePath));
     }
 
     public async Task<(byte[] content, string contentType)?> GetFileAsync(string fileName)
     {
-        var filePath = Path.Combine(_storagePath, fileName);
+        var sanitizedPath = SanitizePath(fileName);
+        var filePath = Path.Combine(_storagePath, sanitizedPath);
 
-        if (!File.Exists(filePath))
+        if (!IsPathSafe(filePath) || !File.Exists(filePath))
         {
             return null;
         }
@@ -115,11 +113,57 @@ public class FileService : IFileService
         return await Task.FromResult(true);
     }
 
-    private FileMetadata CreateFileMetadata(FileInfo fileInfo)
+    private void GetFilesRecursive(string currentPath, string basePath, List<FileMetadata> files)
+    {
+        var directoryInfo = new DirectoryInfo(currentPath);
+
+        foreach (var fileInfo in directoryInfo.GetFiles())
+        {
+            var relativePath = GetRelativePath(basePath, fileInfo.FullName);
+            files.Add(CreateFileMetadata(fileInfo, relativePath));
+        }
+
+        foreach (var subdirectory in directoryInfo.GetDirectories())
+        {
+            GetFilesRecursive(subdirectory.FullName, basePath, files);
+        }
+    }
+
+    private string GetRelativePath(string basePath, string fullPath)
+    {
+        var baseUri = new Uri(basePath.EndsWith(Path.DirectorySeparatorChar.ToString())
+            ? basePath
+            : basePath + Path.DirectorySeparatorChar);
+        var fullUri = new Uri(fullPath);
+        var relativePath = Uri.UnescapeDataString(baseUri.MakeRelativeUri(fullUri).ToString());
+
+        return relativePath.Replace('/', Path.DirectorySeparatorChar);
+    }
+
+    private string SanitizePath(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return string.Empty;
+        }
+
+        return path.Replace('/', Path.DirectorySeparatorChar)
+                   .Replace('\\', Path.DirectorySeparatorChar);
+    }
+
+    private bool IsPathSafe(string fullPath)
+    {
+        var normalizedPath = Path.GetFullPath(fullPath);
+        var normalizedBasePath = Path.GetFullPath(_storagePath);
+
+        return normalizedPath.StartsWith(normalizedBasePath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private FileMetadata CreateFileMetadata(FileInfo fileInfo, string relativePath)
     {
         return new FileMetadata
         {
-            FileName = fileInfo.Name,
+            FileName = relativePath,
             FileSize = fileInfo.Length,
             ContentType = GetContentType(fileInfo.Name),
             CreatedAt = fileInfo.CreationTimeUtc,

@@ -97,6 +97,25 @@ Configure JWT token settings for authenticated sessions:
 
 **Note**: Files must be placed in the `RootPath` directory manually or through other means. This API only provides read access to existing files.
 
+### Folder Structure
+
+You can organize files in subdirectories:
+
+```
+Files/
+├── images/
+│   ├── test.png
+│   └── test2.png
+├── documents/
+│   └── report.pdf
+└── root-file.txt
+```
+
+Access files using their relative path:
+- `/api/files/images/test.png`
+- `/api/files/documents/report.pdf`
+- `/api/files/root-file.txt`
+
 ## Getting Started
 
 ### Prerequisites
@@ -184,17 +203,26 @@ Returns metadata for all stored files.
 
 #### Get File
 ```
-GET /api/files/{fileName}
+GET /api/files/{filePath}
 ```
 
-Downloads the specified file.
+Downloads the specified file. Supports subdirectories.
+
+Examples:
+- `GET /api/files/test.png` - File in root
+- `GET /api/files/images/test.png` - File in images folder
+- `GET /api/files/documents/reports/2024.pdf` - Nested folders
 
 #### Get File Metadata
 ```
-GET /api/files/{fileName}/metadata
+GET /api/files/{filePath}/metadata
 ```
 
 Returns metadata for a specific file (size, content type, dates).
+
+Examples:
+- `GET /api/files/test.png/metadata`
+- `GET /api/files/images/test.png/metadata`
 
 ## Authentication
 
@@ -247,10 +275,17 @@ curl https://localhost:5001/api/files \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-### Download a File
+### Download a File (from root)
 
 ```bash
 curl https://localhost:5001/api/files/example.png \
+  -o downloaded-file.png
+```
+
+### Download a File (from subdirectory)
+
+```bash
+curl https://localhost:5001/api/files/images/test.png \
   -o downloaded-file.png
 ```
 
@@ -258,6 +293,7 @@ curl https://localhost:5001/api/files/example.png \
 
 ```bash
 curl https://localhost:5001/api/files/example.png/metadata
+curl https://localhost:5001/api/files/images/test.png/metadata
 ```
 
 ## Environment Variables

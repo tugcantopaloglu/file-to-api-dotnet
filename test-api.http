@@ -24,20 +24,32 @@ GET {{host}}/api/files
 Authorization: Bearer {{token}}
 ###
 
-### Get file metadata
+### Get file metadata (root file)
 GET {{host}}/api/files/example.png/metadata
+###
+
+### Get file metadata (subdirectory)
+GET {{host}}/api/files/images/test.png/metadata
 ###
 
 ### Get file metadata (with authentication)
-GET {{host}}/api/files/example.png/metadata
+GET {{host}}/api/files/images/test.png/metadata
 Authorization: Bearer {{token}}
 ###
 
-### Download a file
+### Download a file (root)
 GET {{host}}/api/files/example.png
 ###
 
+### Download a file (subdirectory)
+GET {{host}}/api/files/images/test.png
+###
+
+### Download a file (nested subdirectories)
+GET {{host}}/api/files/documents/reports/2024.pdf
+###
+
 ### Download a file (with authentication)
-GET {{host}}/api/files/example.png
+GET {{host}}/api/files/images/test.png
 Authorization: Bearer {{token}}
 ###
