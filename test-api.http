@@ -1,6 +1,20 @@
 @host = https://localhost:5001
 @token = your-jwt-token-here
 
+### Login with Active Directory credentials
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "your-ad-username",
+  "password": "your-password"
+}
+###
+
+### Check authentication status
+GET {{host}}/api/auth/status
+###
+
 ### List all files
 GET {{host}}/api/files
 ###

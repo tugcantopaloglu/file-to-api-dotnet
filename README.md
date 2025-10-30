@@ -1,12 +1,13 @@
 # File to API - .NET
 
-A production-ready REST API for file management with configurable JWT and Azure Active Directory authentication.
+A production-ready REST API for file management with configurable Microsoft Active Directory (LDAP) authentication.
 
 ## Features
 
 - RESTful API for file operations (upload, download, list, delete)
 - Configurable authentication (enable/disable via config)
-- Support for both Azure AD and custom JWT authentication
+- Microsoft Active Directory (LDAP) authentication with JWT tokens
+- User and group information from Active Directory
 - File type validation and size limits
 - Comprehensive error handling and logging
 - Swagger/OpenAPI documentation
@@ -33,43 +34,50 @@ Edit `appsettings.json` to configure authentication:
 ```json
 {
   "Authentication": {
-    "Enabled": true,
-    "Type": "AzureAD"
+    "Enabled": true
   }
 }
 ```
 
 - `Enabled`: Set to `true` to require authentication, `false` to disable
-- `Type`: Choose `"AzureAD"` or `"JWT"`
 
-### Azure AD Configuration
+### Active Directory Configuration
 
-If using Azure AD authentication, configure these settings:
+Configure your on-premises Active Directory settings:
 
 ```json
 {
-  "AzureAd": {
-    "Instance": "https://login.microsoftonline.com/",
-    "TenantId": "your-tenant-id",
-    "ClientId": "your-client-id",
-    "Audience": "api://your-client-id"
+  "ActiveDirectory": {
+    "Domain": "yourdomain.local",
+    "LdapPath": "LDAP://yourdomain.local",
+    "Container": "DC=yourdomain,DC=local"
   }
 }
 ```
 
-### Custom JWT Configuration
+- `Domain`: Your Active Directory domain name
+- `LdapPath`: LDAP connection string to your domain controller
+- `Container`: The distinguished name (DN) of your AD container
 
-If using custom JWT authentication, configure these settings:
+### JWT Token Configuration
+
+Configure JWT token settings for authenticated sessions:
 
 ```json
 {
-  "JwtBearer": {
-    "Issuer": "https://your-issuer.com",
-    "Audience": "your-audience",
-    "SecretKey": "your-secret-key-min-32-characters-long"
+  "JwtSettings": {
+    "SecretKey": "your-secret-key-must-be-at-least-32-characters-long",
+    "Issuer": "https://yourcompany.com",
+    "Audience": "file-api",
+    "ExpirationMinutes": 60
   }
 }
 ```
+
+- `SecretKey`: Secret key for signing JWT tokens (min 32 characters)
+- `Issuer`: Token issuer identifier
+- `Audience`: Token audience identifier
+- `ExpirationMinutes`: Token validity duration
 
 ### File Storage Settings
 
@@ -92,7 +100,8 @@ If using custom JWT authentication, configure these settings:
 ### Prerequisites
 
 - .NET 8.0 SDK or later
-- (Optional) Azure AD tenant for Azure AD authentication
+- Windows Server with Active Directory (for authentication)
+- Server must be domain-joined (if authentication is enabled)
 
 ### Running the Application
 
@@ -131,7 +140,40 @@ To enable authentication in development:
 
 ## API Endpoints
 
-### List All Files
+### Authentication
+
+#### Login
+```
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "your-ad-username",
+  "password": "your-password"
+}
+```
+
+Returns a JWT token for authenticated requests. The username should be the Active Directory SAM account name (e.g., "jdoe" not "jdoe@domain.com").
+
+Response:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "username": "jdoe",
+  "expiresAt": "2025-10-30T10:30:00Z"
+}
+```
+
+#### Check Auth Status
+```
+GET /api/auth/status
+```
+
+Returns current authentication configuration status.
+
+### File Operations
+
+#### List All Files
 ```
 GET /api/files
 ```
@@ -177,18 +219,20 @@ When authentication is enabled, include the JWT token in the Authorization heade
 Authorization: Bearer <your-token>
 ```
 
-### Getting a Token (Azure AD)
+### Getting a Token (Active Directory)
 
-Use the Azure AD OAuth 2.0 flow to obtain a token. Example using client credentials:
+Login with your Active Directory credentials to obtain a JWT token:
 
 ```bash
-curl -X POST https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "client_id={client-id}" \
-  -d "client_secret={client-secret}" \
-  -d "scope={audience}/.default" \
-  -d "grant_type=client_credentials"
+curl -X POST https://localhost:5001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "your-ad-username",
+    "password": "your-password"
+  }'
 ```
+
+The API will validate your credentials against Active Directory and return a JWT token that includes your AD groups as roles.
 
 ### Testing Without Authentication
 
@@ -196,7 +240,15 @@ Set `"Enabled": false` in the Authentication section of `appsettings.json` or `a
 
 ## Examples
 
-### Upload a File (curl)
+### Login to Get Token
+
+```bash
+curl -X POST https://localhost:5001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"jdoe","password":"yourpassword"}'
+```
+
+### Upload a File (without authentication)
 
 ```bash
 curl -X POST https://localhost:5001/api/files \
@@ -206,8 +258,9 @@ curl -X POST https://localhost:5001/api/files \
 ### Upload with Authentication
 
 ```bash
+TOKEN="your-jwt-token-here"
 curl -X POST https://localhost:5001/api/files \
-  -H "Authorization: Bearer <token>" \
+  -H "Authorization: Bearer $TOKEN" \
   -F "file=@/path/to/image.png"
 ```
 
@@ -236,11 +289,15 @@ dotnet run --project src/FileToApi
 
 ## Production Deployment
 
-1. Update `appsettings.json` with production settings
-2. Enable authentication and configure Azure AD or JWT
-3. Set appropriate CORS policies
+1. Deploy on Windows Server joined to your Active Directory domain
+2. Update `appsettings.json` with production settings:
+   - Configure your Active Directory domain settings
+   - Generate a strong JWT secret key (min 32 characters)
+   - Enable authentication
+3. Set appropriate CORS policies (restrict to specific origins)
 4. Configure HTTPS certificates
-5. Consider using a cloud storage service instead of local file storage
+5. Ensure the application pool identity has permissions to query Active Directory
+6. Consider using a network file share or cloud storage instead of local file storage
 
 ### Publishing
 
@@ -262,9 +319,13 @@ dotnet publish -c Release -o ./publish
 
 ### Authentication Issues
 
-- Verify Azure AD configuration (TenantId, ClientId, Audience)
+- Verify Active Directory configuration (Domain, LdapPath, Container)
+- Ensure the server is domain-joined
+- Check that the application has permissions to query Active Directory
+- Verify username format (use SAM account name, not UPN)
 - Check token expiration
 - Ensure Bearer token is correctly formatted
+- Verify JWT secret key is properly configured
 
 ### File Upload Issues
 
