@@ -50,6 +50,8 @@ builder.Services.AddSingleton<IAuthorizationHandler, UserGroupAuthorizationHandl
 builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddSingleton<IRateLimitingService, RateLimitingService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -58,9 +60,9 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "File to API",
+        Title = "User Photo API",
         Version = "v1",
-        Description = "REST API for file management with Active Directory LDAP authentication"
+        Description = "REST API for user profile pictures."
     });
 
     if (authSettings?.Enabled == true)

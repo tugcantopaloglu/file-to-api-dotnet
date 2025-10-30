@@ -74,15 +74,32 @@ public class FileService : IFileService
         var sanitizedPath = SanitizePath(fileName);
         var filePath = Path.Combine(_storagePath, sanitizedPath);
 
-        if (!IsPathSafe(filePath) || !File.Exists(filePath))
+        // Check if file exists with exact path first
+        if (IsPathSafe(filePath) && File.Exists(filePath))
         {
-            return null;
+            var bytes = await File.ReadAllBytesAsync(filePath);
+            var contentType = GetContentType(fileName);
+            return (bytes, contentType);
         }
 
-        var bytes = await File.ReadAllBytesAsync(filePath);
-        var contentType = GetContentType(fileName);
+        // If file doesn't exist and has no extension, try with allowed extensions
+        if (IsPathSafe(filePath) && string.IsNullOrEmpty(Path.GetExtension(fileName)))
+        {
+            foreach (var extension in _settings.AllowedExtensions)
+            {
+                var filePathWithExtension = filePath + extension;
 
-        return (bytes, contentType);
+                if (IsPathSafe(filePathWithExtension) && File.Exists(filePathWithExtension))
+                {
+                    var bytes = await File.ReadAllBytesAsync(filePathWithExtension);
+                    var contentType = GetContentType(filePathWithExtension);
+                    _logger.LogInformation("File found with auto-detected extension: {Extension} for {FileName}", extension, fileName);
+                    return (bytes, contentType);
+                }
+            }
+        }
+
+        return null;
     }
 
     public async Task<string> UploadFileAsync(IFormFile file)
