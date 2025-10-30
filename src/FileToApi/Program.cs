@@ -36,14 +36,16 @@ if (authSettings?.Enabled == true)
             };
         });
 
-    builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy("UserGroupPolicy", policy =>
-            policy.Requirements.Add(new UserGroupAuthorizationRequirement()));
-    });
-
-    builder.Services.AddSingleton<IAuthorizationHandler, UserGroupAuthorizationHandler>();
+    builder.Services.AddAuthorization();
 }
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("UserGroupPolicy", policy =>
+        policy.Requirements.Add(new UserGroupAuthorizationRequirement()));
+});
+
+builder.Services.AddSingleton<IAuthorizationHandler, UserGroupAuthorizationHandler>();
 
 builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
