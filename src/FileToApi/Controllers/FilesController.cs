@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace FileToApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("img")]
 [ConditionalAuthorize]
 public class FilesController : ControllerBase
 {

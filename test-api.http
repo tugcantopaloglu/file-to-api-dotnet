@@ -15,41 +15,32 @@ Content-Type: application/json
 GET {{host}}/api/auth/status
 ###
 
-### List all files (without authentication)
-GET {{host}}/api/files
+### Download image (root folder)
+GET {{host}}/img/photo.jpg
 ###
 
-### List all files (with authentication)
-GET {{host}}/api/files
+### Download image (subdirectory)
+GET {{host}}/img/gallery/vacation.jpg
+###
+
+### Download image (nested subdirectories)
+GET {{host}}/img/2024/summer/beach.png
+###
+
+### Download image (with authentication)
+GET {{host}}/img/photo.jpg
 Authorization: Bearer {{token}}
 ###
 
 ### Get file metadata (root file)
-GET {{host}}/api/files/example.png/metadata
+GET {{host}}/img/photo.jpg/metadata
 ###
 
 ### Get file metadata (subdirectory)
-GET {{host}}/api/files/images/test.png/metadata
+GET {{host}}/img/gallery/vacation.jpg/metadata
 ###
 
 ### Get file metadata (with authentication)
-GET {{host}}/api/files/images/test.png/metadata
-Authorization: Bearer {{token}}
-###
-
-### Download a file (root)
-GET {{host}}/api/files/example.png
-###
-
-### Download a file (subdirectory)
-GET {{host}}/api/files/images/test.png
-###
-
-### Download a file (nested subdirectories)
-GET {{host}}/api/files/documents/reports/2024.pdf
-###
-
-### Download a file (with authentication)
-GET {{host}}/api/files/images/test.png
+GET {{host}}/img/gallery/vacation.jpg/metadata
 Authorization: Bearer {{token}}
 ###

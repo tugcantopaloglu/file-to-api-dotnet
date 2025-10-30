@@ -115,9 +115,9 @@ Files/
 ```
 
 Access files using their relative path:
-- `/api/files/images/test.png`
-- `/api/files/documents/report.pdf`
-- `/api/files/root-file.txt`
+- `/img/photos/vacation.jpg`
+- `/img/logos/company.png`
+- `/img/banner.jpg`
 
 ## Getting Started
 
@@ -197,35 +197,28 @@ Returns current authentication configuration status.
 
 ### File Operations
 
-#### List All Files
-```
-GET /api/files
-```
-
-Returns metadata for all stored files.
-
 #### Get File
 ```
-GET /api/files/{filePath}
+GET /img/{filePath}
 ```
 
 Downloads the specified file. Supports subdirectories.
 
 Examples:
-- `GET /api/files/test.png` - File in root
-- `GET /api/files/images/test.png` - File in images folder
-- `GET /api/files/documents/reports/2024.pdf` - Nested folders
+- `GET /img/photo.jpg` - File in root
+- `GET /img/gallery/photo.jpg` - File in gallery folder
+- `GET /img/2024/vacation/beach.png` - Nested folders
 
 #### Get File Metadata
 ```
-GET /api/files/{filePath}/metadata
+GET /img/{filePath}/metadata
 ```
 
 Returns metadata for a specific file (size, content type, dates).
 
 Examples:
-- `GET /api/files/test.png/metadata`
-- `GET /api/files/images/test.png/metadata`
+- `GET /img/photo.jpg/metadata`
+- `GET /img/gallery/photo.jpg/metadata`
 
 ## Authentication
 
@@ -264,39 +257,34 @@ curl -X POST https://localhost:5001/api/auth/login \
   -d '{"username":"jdoe","password":"yourpassword"}'
 ```
 
-### List All Files
-
-```bash
-curl https://localhost:5001/api/files
-```
-
-### List All Files (with authentication)
-
-```bash
-TOKEN="your-jwt-token-here"
-curl https://localhost:5001/api/files \
-  -H "Authorization: Bearer $TOKEN"
-```
-
 ### Download a File (from root)
 
 ```bash
-curl https://localhost:5001/api/files/example.png \
-  -o downloaded-file.png
+curl https://localhost:5001/img/photo.jpg \
+  -o photo.jpg
 ```
 
 ### Download a File (from subdirectory)
 
 ```bash
-curl https://localhost:5001/api/files/images/test.png \
-  -o downloaded-file.png
+curl https://localhost:5001/img/gallery/vacation.jpg \
+  -o vacation.jpg
+```
+
+### Download with Authentication
+
+```bash
+TOKEN="your-jwt-token-here"
+curl https://localhost:5001/img/photo.jpg \
+  -H "Authorization: Bearer $TOKEN" \
+  -o photo.jpg
 ```
 
 ### Get File Metadata
 
 ```bash
-curl https://localhost:5001/api/files/example.png/metadata
-curl https://localhost:5001/api/files/images/test.png/metadata
+curl https://localhost:5001/img/photo.jpg/metadata
+curl https://localhost:5001/img/gallery/vacation.jpg/metadata
 ```
 
 ## Environment Variables
@@ -415,7 +403,7 @@ The `web.config` is included and pre-configured. You can modify it if needed:
 
 1. Browse to `https://your-server/api/auth/status`
 2. Check logs in `.\logs\` folder if issues occur
-3. Verify file access: `https://your-server/api/files`
+3. Verify file access: `https://your-server/img/photo.jpg`
 
 ### Configuration via web.config
 
