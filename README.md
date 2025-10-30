@@ -1,14 +1,14 @@
 # File to API - .NET
 
-A production-ready REST API for file management with configurable Microsoft Active Directory (LDAP) authentication.
+A production-ready read-only REST API for serving files with configurable Microsoft Active Directory (LDAP) authentication.
 
 ## Features
 
-- RESTful API for file operations (upload, download, list, delete)
+- RESTful API for file operations (list, download, view metadata)
+- Read-only access - no upload or delete capabilities
 - Configurable authentication (enable/disable via config)
 - Microsoft Active Directory (LDAP) authentication with JWT tokens
 - User and group information from Active Directory
-- File type validation and size limits
 - Comprehensive error handling and logging
 - Swagger/OpenAPI documentation
 - CORS support
@@ -91,9 +91,11 @@ Configure JWT token settings for authenticated sessions:
 }
 ```
 
-- `RootPath`: Directory for file storage
-- `MaxFileSize`: Maximum file size in bytes (default: 50MB)
-- `AllowedExtensions`: List of allowed file extensions
+- `RootPath`: Directory where files are stored (read-only access)
+- `MaxFileSize`: Not applicable for read-only API (kept for compatibility)
+- `AllowedExtensions`: Not applicable for read-only API (kept for compatibility)
+
+**Note**: Files must be placed in the `RootPath` directory manually or through other means. This API only provides read access to existing files.
 
 ## Getting Started
 
@@ -180,36 +182,19 @@ GET /api/files
 
 Returns metadata for all stored files.
 
-### Get File
+#### Get File
 ```
 GET /api/files/{fileName}
 ```
 
 Downloads the specified file.
 
-### Get File Metadata
+#### Get File Metadata
 ```
 GET /api/files/{fileName}/metadata
 ```
 
 Returns metadata for a specific file (size, content type, dates).
-
-### Upload File
-```
-POST /api/files
-Content-Type: multipart/form-data
-
-file: <binary>
-```
-
-Uploads a new file. Returns the generated filename and URL.
-
-### Delete File
-```
-DELETE /api/files/{fileName}
-```
-
-Deletes the specified file.
 
 ## Authentication
 
@@ -248,33 +233,31 @@ curl -X POST https://localhost:5001/api/auth/login \
   -d '{"username":"jdoe","password":"yourpassword"}'
 ```
 
-### Upload a File (without authentication)
+### List All Files
 
 ```bash
-curl -X POST https://localhost:5001/api/files \
-  -F "file=@/path/to/image.png"
+curl https://localhost:5001/api/files
 ```
 
-### Upload with Authentication
+### List All Files (with authentication)
 
 ```bash
 TOKEN="your-jwt-token-here"
-curl -X POST https://localhost:5001/api/files \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@/path/to/image.png"
+curl https://localhost:5001/api/files \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ### Download a File
 
 ```bash
-curl https://localhost:5001/api/files/{fileName} \
+curl https://localhost:5001/api/files/example.png \
   -o downloaded-file.png
 ```
 
-### List All Files
+### Get File Metadata
 
 ```bash
-curl https://localhost:5001/api/files
+curl https://localhost:5001/api/files/example.png/metadata
 ```
 
 ## Environment Variables
