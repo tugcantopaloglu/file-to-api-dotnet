@@ -1,6 +1,8 @@
+using FileToApi.Authorization;
 using FileToApi.Models;
 using FileToApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -8,6 +10,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<AuthenticationSettings>(builder.Configuration.GetSection("Authentication"));
+builder.Services.Configure<AuthorizationSettings>(builder.Configuration.GetSection("Authorization"));
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<ActiveDirectorySettings>(builder.Configuration.GetSection("ActiveDirectory"));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
@@ -33,7 +36,13 @@ if (authSettings?.Enabled == true)
             };
         });
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("UserGroupPolicy", policy =>
+            policy.Requirements.Add(new UserGroupAuthorizationRequirement()));
+    });
+
+    builder.Services.AddSingleton<IAuthorizationHandler, UserGroupAuthorizationHandler>();
 }
 
 builder.Services.AddScoped<IActiveDirectoryService, ActiveDirectoryService>();

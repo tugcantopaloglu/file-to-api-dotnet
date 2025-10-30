@@ -1,5 +1,6 @@
 using FileToApi.Attributes;
 using FileToApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FileToApi.Controllers;
@@ -7,6 +8,7 @@ namespace FileToApi.Controllers;
 [ApiController]
 [Route("img")]
 [ConditionalAuthorize]
+[Authorize(Policy = "UserGroupPolicy")]
 public class FilesController : ControllerBase
 {
     private readonly IFileService _fileService;

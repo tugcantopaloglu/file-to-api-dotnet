@@ -41,6 +41,66 @@ Edit `appsettings.json` to configure authentication:
 
 - `Enabled`: Set to `true` to require authentication, `false` to disable
 
+### Authorization Settings
+
+Limit access to specific users or AD groups:
+
+```json
+{
+  "Authorization": {
+    "AllowedUsers": ["jdoe", "asmith", "mjones"],
+    "AllowedGroups": ["Domain Admins", "File-Readers", "IT-Staff"]
+  }
+}
+```
+
+- `AllowedUsers`: List of AD usernames allowed to access files (case-insensitive)
+- `AllowedGroups`: List of AD group names allowed to access files (case-insensitive)
+- If both lists are empty, all authenticated users can access files
+- Users are granted access if they are in **either** the AllowedUsers list **OR** a member of any AllowedGroups
+
+**Examples:**
+
+Only specific users:
+```json
+{
+  "Authorization": {
+    "AllowedUsers": ["admin", "manager"],
+    "AllowedGroups": []
+  }
+}
+```
+
+Only specific AD groups:
+```json
+{
+  "Authorization": {
+    "AllowedUsers": [],
+    "AllowedGroups": ["IT-Team", "Executives"]
+  }
+}
+```
+
+Mix of both (user OR group member):
+```json
+{
+  "Authorization": {
+    "AllowedUsers": ["contractor1"],
+    "AllowedGroups": ["Full-Time-Employees"]
+  }
+}
+```
+
+Allow all authenticated users:
+```json
+{
+  "Authorization": {
+    "AllowedUsers": [],
+    "AllowedGroups": []
+  }
+}
+```
+
 ### Active Directory Configuration
 
 Configure your on-premises Active Directory settings:
