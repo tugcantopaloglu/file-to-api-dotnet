@@ -54,6 +54,8 @@ builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddSingleton<IRateLimitingService, RateLimitingService>();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddResponseCaching();
 builder.Services.AddResponseCompression(options =>
 {
@@ -138,5 +140,6 @@ if (authSettings?.Enabled == true)
 }
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();

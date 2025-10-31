@@ -12,6 +12,9 @@ public interface IFileService
     Task<(string base64Data, string contentType, string fileName)?> GetThumbnailAsBase64Async(string fileName);
     Task<(byte[] content, string contentType)?> GetCompressedImageAsync(string fileName, int? maxWidth = null, int? maxHeight = null, int? quality = null);
     Task<(string base64Data, string contentType, string fileName)?> GetCompressedImageAsBase64Async(string fileName, int? maxWidth = null, int? maxHeight = null, int? quality = null);
+    Task<BatchFileResponse> GetBatchFilesAsBase64Async(List<string> filePaths);
+    Task<BatchFileResponse> GetBatchThumbnailsAsBase64Async(List<string> filePaths);
+    Task<BatchFileResponse> GetBatchMobileImagesAsBase64Async(List<string> filePaths, int? maxWidth = null, int? maxHeight = null, int? quality = null);
     Task<string> UploadFileAsync(IFormFile file);
     Task<bool> DeleteFileAsync(string fileName);
 }

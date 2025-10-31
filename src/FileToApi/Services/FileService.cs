@@ -4,6 +4,8 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Formats.Gif;
 
 namespace FileToApi.Services;
 
@@ -263,12 +265,32 @@ public class FileService : IFileService
         {
             ".png" => "image/png",
             ".jpg" or ".jpeg" => "image/jpeg",
+            ".webp" => "image/webp",
             ".gif" => "image/gif",
             ".pdf" => "application/pdf",
             ".txt" => "text/plain",
             ".json" => "application/json",
             _ => "application/octet-stream"
         };
+    }
+
+    private async Task SaveImageAsync(Image image, MemoryStream ms, string contentType, int quality)
+    {
+        switch (contentType)
+        {
+            case "image/png":
+                await image.SaveAsPngAsync(ms);
+                break;
+            case "image/webp":
+                await image.SaveAsWebpAsync(ms, new WebpEncoder { Quality = quality });
+                break;
+            case "image/gif":
+                await image.SaveAsGifAsync(ms);
+                break;
+            default: // jpeg
+                await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = quality });
+                break;
+        }
     }
 
     public async Task<(byte[] content, string contentType)?> GetThumbnailAsync(string fileName)
@@ -302,14 +324,7 @@ public class FileService : IFileService
             image.Mutate(x => x.Resize(newWidth, newHeight));
 
             using var ms = new MemoryStream();
-            if (contentType == "image/png")
-            {
-                await image.SaveAsPngAsync(ms);
-            }
-            else
-            {
-                await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = _imageSettings.CompressionQuality });
-            }
+            await SaveImageAsync(image, ms, contentType, _imageSettings.CompressionQuality);
 
             return (ms.ToArray(), contentType);
         }
@@ -358,14 +373,7 @@ public class FileService : IFileService
             }
 
             using var ms = new MemoryStream();
-            if (contentType == "image/png")
-            {
-                await image.SaveAsPngAsync(ms);
-            }
-            else
-            {
-                await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = targetQuality });
-            }
+            await SaveImageAsync(image, ms, contentType, targetQuality);
 
             _logger.LogInformation("Compressed image {FileName}: Original size: {OriginalSize} bytes, Compressed size: {CompressedSize} bytes",
                 fileName, bytes.Length, ms.Length);
@@ -427,5 +435,155 @@ public class FileService : IFileService
         }
 
         return (base64Data, contentType, fileNameOnly);
+    }
+
+    public async Task<BatchFileResponse> GetBatchFilesAsBase64Async(List<string> filePaths)
+    {
+        var response = new BatchFileResponse
+        {
+            TotalRequested = filePaths.Count
+        };
+
+        var tasks = filePaths.Select(async filePath =>
+        {
+            var item = new BatchFileItem
+            {
+                RequestedPath = filePath
+            };
+
+            try
+            {
+                var result = await GetFileAsBase64Async(filePath);
+                if (result != null)
+                {
+                    item.FileName = result.Value.fileName;
+                    item.ContentType = result.Value.contentType;
+                    item.Base64Data = result.Value.base64Data;
+                    item.Found = true;
+                }
+                else
+                {
+                    item.Found = false;
+                    item.Error = "File not found";
+                }
+            }
+            catch (Exception ex)
+            {
+                item.Found = false;
+                item.Error = ex.Message;
+                _logger.LogError(ex, "Error processing batch file: {FilePath}", filePath);
+            }
+
+            return item;
+        });
+
+        response.Files = (await Task.WhenAll(tasks)).ToList();
+        response.TotalFound = response.Files.Count(f => f.Found);
+        response.TotalNotFound = response.Files.Count(f => !f.Found);
+
+        _logger.LogInformation("Batch request completed: {TotalRequested} requested, {TotalFound} found, {TotalNotFound} not found",
+            response.TotalRequested, response.TotalFound, response.TotalNotFound);
+
+        return response;
+    }
+
+    public async Task<BatchFileResponse> GetBatchThumbnailsAsBase64Async(List<string> filePaths)
+    {
+        var response = new BatchFileResponse
+        {
+            TotalRequested = filePaths.Count
+        };
+
+        var tasks = filePaths.Select(async filePath =>
+        {
+            var item = new BatchFileItem
+            {
+                RequestedPath = filePath
+            };
+
+            try
+            {
+                var result = await GetThumbnailAsBase64Async(filePath);
+                if (result != null)
+                {
+                    item.FileName = result.Value.fileName;
+                    item.ContentType = result.Value.contentType;
+                    item.Base64Data = result.Value.base64Data;
+                    item.Found = true;
+                }
+                else
+                {
+                    item.Found = false;
+                    item.Error = "File not found";
+                }
+            }
+            catch (Exception ex)
+            {
+                item.Found = false;
+                item.Error = ex.Message;
+                _logger.LogError(ex, "Error processing batch thumbnail: {FilePath}", filePath);
+            }
+
+            return item;
+        });
+
+        response.Files = (await Task.WhenAll(tasks)).ToList();
+        response.TotalFound = response.Files.Count(f => f.Found);
+        response.TotalNotFound = response.Files.Count(f => !f.Found);
+
+        _logger.LogInformation("Batch thumbnail request completed: {TotalRequested} requested, {TotalFound} found, {TotalNotFound} not found",
+            response.TotalRequested, response.TotalFound, response.TotalNotFound);
+
+        return response;
+    }
+
+    public async Task<BatchFileResponse> GetBatchMobileImagesAsBase64Async(List<string> filePaths, int? maxWidth = null, int? maxHeight = null, int? quality = null)
+    {
+        var response = new BatchFileResponse
+        {
+            TotalRequested = filePaths.Count
+        };
+
+        var tasks = filePaths.Select(async filePath =>
+        {
+            var item = new BatchFileItem
+            {
+                RequestedPath = filePath
+            };
+
+            try
+            {
+                var result = await GetCompressedImageAsBase64Async(filePath, maxWidth, maxHeight, quality);
+                if (result != null)
+                {
+                    item.FileName = result.Value.fileName;
+                    item.ContentType = result.Value.contentType;
+                    item.Base64Data = result.Value.base64Data;
+                    item.Found = true;
+                }
+                else
+                {
+                    item.Found = false;
+                    item.Error = "File not found";
+                }
+            }
+            catch (Exception ex)
+            {
+                item.Found = false;
+                item.Error = ex.Message;
+                _logger.LogError(ex, "Error processing batch mobile image: {FilePath}", filePath);
+            }
+
+            return item;
+        });
+
+        response.Files = (await Task.WhenAll(tasks)).ToList();
+        response.TotalFound = response.Files.Count(f => f.Found);
+        response.TotalNotFound = response.Files.Count(f => !f.Found);
+
+        _logger.LogInformation("Batch mobile image request completed: {TotalRequested} requested, {TotalFound} found, {TotalNotFound} not found",
+            response.TotalRequested, response.TotalFound, response.TotalNotFound);
+
+        return response;
     }
 }

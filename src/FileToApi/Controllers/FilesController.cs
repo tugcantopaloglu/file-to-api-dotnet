@@ -375,23 +375,185 @@ public class FilesController : ControllerBase
         }
     }
 
-    //private async Task<IActionResult> GetFileMetadataInternal(string filePath)
-    //{
-    //    try
-    //    {
-    //        var metadata = await _fileService.GetFileMetadataAsync(filePath);
+    /// <summary>
+    /// Retrieves multiple files as base64 encoded JSON in a single request.
+    /// </summary>
+    /// <param name="request">List of file paths to retrieve</param>
+    /// <returns>Batch response with all requested files</returns>
+    /// <response code="200">Batch operation completed (individual files may be not found)</response>
+    /// <response code="400">Invalid request or empty file paths</response>
+    /// <response code="500">Server error occurred</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST /img/batch/base64
+    ///     {
+    ///       "filePaths": ["photo1.jpg", "photo2", "subfolder/photo3.png"]
+    ///     }
+    ///
+    /// Returns:
+    ///
+    ///     {
+    ///       "files": [
+    ///         {
+    ///           "requestedPath": "photo1.jpg",
+    ///           "fileName": "photo1.jpg",
+    ///           "contentType": "image/jpeg",
+    ///           "base64Data": "iVBORw0KG...",
+    ///           "found": true,
+    ///           "error": null
+    ///         },
+    ///         {
+    ///           "requestedPath": "photo2",
+    ///           "fileName": "photo2.png",
+    ///           "contentType": "image/png",
+    ///           "base64Data": "iVBORw0KG...",
+    ///           "found": true,
+    ///           "error": null
+    ///         }
+    ///       ],
+    ///       "totalRequested": 2,
+    ///       "totalFound": 2,
+    ///       "totalNotFound": 0
+    ///     }
+    ///
+    /// Supports automatic extension detection for files without extensions.
+    /// Perfect for mobile apps to load multiple images in one network call.
+    /// </remarks>
+    [HttpPost("batch/base64")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request" })]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetBatchFilesAsBase64([FromBody] BatchFileRequest request)
+    {
+        if (request?.FilePaths == null || !request.FilePaths.Any())
+        {
+            return BadRequest(new { message = "File paths are required" });
+        }
 
-    //        if (metadata == null)
-    //        {
-    //            return NotFound(new { message = "File not found" });
-    //        }
+        try
+        {
+            var result = await _fileService.GetBatchFilesAsBase64Async(request.FilePaths);
 
-    //        return Ok(metadata);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        _logger.LogError(ex, "Error retrieving file metadata: {FilePath}", filePath);
-    //        return StatusCode(500, "An error occurred while retrieving file metadata");
-    //    }
-    //}
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving batch files");
+            return StatusCode(500, "An error occurred while retrieving batch files");
+        }
+    }
+
+    /// <summary>
+    /// Retrieves multiple thumbnail images as base64 encoded JSON in a single request.
+    /// </summary>
+    /// <param name="request">List of file paths to retrieve as thumbnails</param>
+    /// <returns>Batch response with all requested thumbnails</returns>
+    /// <response code="200">Batch operation completed</response>
+    /// <response code="400">Invalid request or empty file paths</response>
+    /// <response code="500">Server error occurred</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST /img/batch/thumbnail
+    ///     {
+    ///       "filePaths": ["photo1.jpg", "photo2", "photo3.png"]
+    ///     }
+    ///
+    /// Returns 150x150px thumbnails for all requested files.
+    /// Ideal for displaying image galleries or lists in mobile apps.
+    /// </remarks>
+    [HttpPost("batch/thumbnail")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request" })]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetBatchThumbnailsAsBase64([FromBody] BatchFileRequest request)
+    {
+        if (request?.FilePaths == null || !request.FilePaths.Any())
+        {
+            return BadRequest(new { message = "File paths are required" });
+        }
+
+        try
+        {
+            var result = await _fileService.GetBatchThumbnailsAsBase64Async(request.FilePaths);
+
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving batch thumbnails");
+            return StatusCode(500, "An error occurred while retrieving batch thumbnails");
+        }
+    }
+
+    /// <summary>
+    /// Retrieves multiple compressed/mobile-optimized images as base64 encoded JSON in a single request.
+    /// </summary>
+    /// <param name="request">List of file paths to retrieve</param>
+    /// <param name="maxWidth">Optional maximum width for all images (default: 800px from config)</param>
+    /// <param name="maxHeight">Optional maximum height for all images (default: 800px from config)</param>
+    /// <param name="quality">Optional JPEG quality 1-100 for all images (default: 75 from config)</param>
+    /// <returns>Batch response with all requested compressed images</returns>
+    /// <response code="200">Batch operation completed</response>
+    /// <response code="400">Invalid request, empty file paths, or invalid quality parameter</response>
+    /// <response code="500">Server error occurred</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST /img/batch/mobile?maxWidth=600&amp;maxHeight=600&amp;quality=80
+    ///     {
+    ///       "filePaths": ["photo1.jpg", "photo2", "photo3.png"]
+    ///     }
+    ///
+    /// Perfect for loading multiple mobile-optimized images in one request.
+    /// Significantly reduces network overhead for mobile apps.
+    /// All images will use the same compression settings.
+    /// </remarks>
+    [HttpPost("batch/mobile")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request", "maxWidth", "maxHeight", "quality" })]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetBatchMobileImagesAsBase64([FromBody] BatchFileRequest request, [FromQuery] int? maxWidth, [FromQuery] int? maxHeight, [FromQuery] int? quality)
+    {
+        if (request?.FilePaths == null || !request.FilePaths.Any())
+        {
+            return BadRequest(new { message = "File paths are required" });
+        }
+
+        if (quality.HasValue && (quality.Value < 1 || quality.Value > 100))
+        {
+            return BadRequest(new { message = "Quality must be between 1 and 100" });
+        }
+
+        try
+        {
+            var result = await _fileService.GetBatchMobileImagesAsBase64Async(request.FilePaths, maxWidth, maxHeight, quality);
+
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving batch mobile images");
+            return StatusCode(500, "An error occurred while retrieving batch mobile images");
+        }
+    }
 }
