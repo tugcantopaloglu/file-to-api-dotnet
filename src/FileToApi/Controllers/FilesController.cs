@@ -165,23 +165,6 @@ public class FilesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Retrieves a thumbnail version of an image (150x150 max by default).
-    /// </summary>
-    /// <param name="filePath">The relative path to the image file</param>
-    /// <returns>Resized image maintaining aspect ratio</returns>
-    /// <response code="200">Thumbnail retrieved successfully</response>
-    /// <response code="400">File path is required</response>
-    /// <response code="404">File not found</response>
-    /// <response code="500">Server error occurred</response>
-    /// <remarks>
-    /// Sample request:
-    ///
-    ///     GET /img/thumbnail/photo.jpg
-    ///
-    /// Returns a smaller version of the image optimized for thumbnails.
-    /// Non-image files are returned as-is without processing.
-    /// </remarks>
     [HttpGet("thumbnail/{*filePath}")]
     [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath" })]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -219,31 +202,6 @@ public class FilesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Retrieves a compressed/resized version of an image optimized for mobile devices.
-    /// </summary>
-    /// <param name="filePath">The relative path to the image file</param>
-    /// <param name="maxWidth">Optional maximum width (default: 800px from config)</param>
-    /// <param name="maxHeight">Optional maximum height (default: 800px from config)</param>
-    /// <param name="quality">Optional JPEG quality 1-100 (default: 75 from config)</param>
-    /// <returns>Compressed and resized image maintaining aspect ratio</returns>
-    /// <response code="200">Compressed image retrieved successfully</response>
-    /// <response code="400">File path is required or invalid parameters</response>
-    /// <response code="404">File not found</response>
-    /// <response code="500">Server error occurred</response>
-    /// <remarks>
-    /// Sample requests:
-    ///
-    ///     GET /img/mobile/photo.jpg
-    ///     Uses default settings (800x800 max, quality 75)
-    ///
-    ///     GET /img/mobile/photo.jpg?maxWidth=600&amp;maxHeight=600&amp;quality=80
-    ///     Custom size and quality
-    ///
-    /// Perfect for mobile apps to reduce bandwidth and improve loading times.
-    /// Images are only resized if they exceed the specified dimensions.
-    /// Non-image files are returned as-is without processing.
-    /// </remarks>
     [HttpGet("mobile/{*filePath}")]
     [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath", "maxWidth", "maxHeight", "quality" })]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -286,31 +244,6 @@ public class FilesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Retrieves a file by its path. Supports raw file or metadata mode.
-    /// </summary>
-    /// <param name="filePath">The relative path to the file. Can include suffix:
-    /// - No suffix: Returns the raw file
-    /// - /metadata: Returns file metadata (size, content type, timestamps)</param>
-    /// <returns>
-    /// - Raw file: Binary file stream with appropriate content type
-    /// - Metadata mode: JSON object with file information
-    /// </returns>
-    /// <response code="200">File retrieved successfully</response>
-    /// <response code="400">File path is required</response>
-    /// <response code="404">File not found</response>
-    /// <response code="500">Server error occurred</response>
-    /// <remarks>
-    /// Sample requests:
-    ///
-    ///     GET /img/photo.jpg
-    ///     Returns the raw image file
-    ///
-    ///     GET /img/photo.jpg/metadata
-    ///     Returns: { "fileName": "photo.jpg", "fileSize": 12345, "contentType": "image/jpeg", ... }
-    ///
-    /// If the file path doesn't include an extension, the API will automatically try allowed extensions (.jpg, .png, etc.)
-    /// </remarks>
     [HttpGet("{*filePath}")]
     [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath" })]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -375,51 +308,6 @@ public class FilesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Retrieves multiple files as base64 encoded JSON in a single request.
-    /// </summary>
-    /// <param name="request">List of file paths to retrieve</param>
-    /// <returns>Batch response with all requested files</returns>
-    /// <response code="200">Batch operation completed (individual files may be not found)</response>
-    /// <response code="400">Invalid request or empty file paths</response>
-    /// <response code="500">Server error occurred</response>
-    /// <remarks>
-    /// Sample request:
-    ///
-    ///     POST /img/batch/base64
-    ///     {
-    ///       "filePaths": ["photo1.jpg", "photo2", "subfolder/photo3.png"]
-    ///     }
-    ///
-    /// Returns:
-    ///
-    ///     {
-    ///       "files": [
-    ///         {
-    ///           "requestedPath": "photo1.jpg",
-    ///           "fileName": "photo1.jpg",
-    ///           "contentType": "image/jpeg",
-    ///           "base64Data": "iVBORw0KG...",
-    ///           "found": true,
-    ///           "error": null
-    ///         },
-    ///         {
-    ///           "requestedPath": "photo2",
-    ///           "fileName": "photo2.png",
-    ///           "contentType": "image/png",
-    ///           "base64Data": "iVBORw0KG...",
-    ///           "found": true,
-    ///           "error": null
-    ///         }
-    ///       ],
-    ///       "totalRequested": 2,
-    ///       "totalFound": 2,
-    ///       "totalNotFound": 0
-    ///     }
-    ///
-    /// Supports automatic extension detection for files without extensions.
-    /// Perfect for mobile apps to load multiple images in one network call.
-    /// </remarks>
     [HttpPost("batch/base64")]
     [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request" })]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -450,25 +338,7 @@ public class FilesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Retrieves multiple thumbnail images as base64 encoded JSON in a single request.
-    /// </summary>
-    /// <param name="request">List of file paths to retrieve as thumbnails</param>
-    /// <returns>Batch response with all requested thumbnails</returns>
-    /// <response code="200">Batch operation completed</response>
-    /// <response code="400">Invalid request or empty file paths</response>
-    /// <response code="500">Server error occurred</response>
-    /// <remarks>
-    /// Sample request:
-    ///
-    ///     POST /img/batch/thumbnail
-    ///     {
-    ///       "filePaths": ["photo1.jpg", "photo2", "photo3.png"]
-    ///     }
-    ///
-    /// Returns 150x150px thumbnails for all requested files.
-    /// Ideal for displaying image galleries or lists in mobile apps.
-    /// </remarks>
+
     [HttpPost("batch/thumbnail")]
     [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request" })]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -499,29 +369,7 @@ public class FilesController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Retrieves multiple compressed/mobile-optimized images as base64 encoded JSON in a single request.
-    /// </summary>
-    /// <param name="request">List of file paths to retrieve</param>
-    /// <param name="maxWidth">Optional maximum width for all images (default: 800px from config)</param>
-    /// <param name="maxHeight">Optional maximum height for all images (default: 800px from config)</param>
-    /// <param name="quality">Optional JPEG quality 1-100 for all images (default: 75 from config)</param>
-    /// <returns>Batch response with all requested compressed images</returns>
-    /// <response code="200">Batch operation completed</response>
-    /// <response code="400">Invalid request, empty file paths, or invalid quality parameter</response>
-    /// <response code="500">Server error occurred</response>
-    /// <remarks>
-    /// Sample request:
-    ///
-    ///     POST /img/batch/mobile?maxWidth=600&amp;maxHeight=600&amp;quality=80
-    ///     {
-    ///       "filePaths": ["photo1.jpg", "photo2", "photo3.png"]
-    ///     }
-    ///
-    /// Perfect for loading multiple mobile-optimized images in one request.
-    /// Significantly reduces network overhead for mobile apps.
-    /// All images will use the same compression settings.
-    /// </remarks>
+
     [HttpPost("batch/mobile")]
     [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request", "maxWidth", "maxHeight", "quality" })]
     [ProducesResponseType(StatusCodes.Status200OK)]

@@ -58,5 +58,5 @@ src/FileToApi/Files/*
 !src/FileToApi/Files/README.txt
 !src/FileToApi/Files/.gitkeep
 
-/.claude
-/.vs
+.claude
+.vs
