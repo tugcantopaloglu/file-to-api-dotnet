@@ -378,4 +378,54 @@ public class FileService : IFileService
             return fileResult; // Return original if processing fails
         }
     }
+
+    public async Task<(string base64Data, string contentType, string fileName)?> GetThumbnailAsBase64Async(string fileName)
+    {
+        var result = await GetThumbnailAsync(fileName);
+        if (result == null)
+        {
+            return null;
+        }
+
+        var (bytes, contentType) = result.Value;
+        var base64Data = Convert.ToBase64String(bytes);
+        var fileNameOnly = Path.GetFileName(fileName);
+
+        // If no extension, try to get the actual filename from the file that was found
+        if (string.IsNullOrEmpty(Path.GetExtension(fileName)))
+        {
+            var actualFile = await GetFileMetadataAsync(fileName);
+            if (actualFile != null)
+            {
+                fileNameOnly = Path.GetFileName(actualFile.FileName);
+            }
+        }
+
+        return (base64Data, contentType, fileNameOnly);
+    }
+
+    public async Task<(string base64Data, string contentType, string fileName)?> GetCompressedImageAsBase64Async(string fileName, int? maxWidth = null, int? maxHeight = null, int? quality = null)
+    {
+        var result = await GetCompressedImageAsync(fileName, maxWidth, maxHeight, quality);
+        if (result == null)
+        {
+            return null;
+        }
+
+        var (bytes, contentType) = result.Value;
+        var base64Data = Convert.ToBase64String(bytes);
+        var fileNameOnly = Path.GetFileName(fileName);
+
+        // If no extension, try to get the actual filename from the file that was found
+        if (string.IsNullOrEmpty(Path.GetExtension(fileName)))
+        {
+            var actualFile = await GetFileMetadataAsync(fileName);
+            if (actualFile != null)
+            {
+                fileNameOnly = Path.GetFileName(actualFile.FileName);
+            }
+        }
+
+        return (base64Data, contentType, fileNameOnly);
+    }
 }

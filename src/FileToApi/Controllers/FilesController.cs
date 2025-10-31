@@ -37,30 +37,6 @@ public class FilesController : ControllerBase
     //    }
     //}
 
-    /// <summary>
-    /// Retrieves a file as base64 encoded JSON.
-    /// </summary>
-    /// <param name="filePath">The relative path to the file (e.g., "photo.jpg" or "subfolder/image.png")</param>
-    /// <returns>JSON object containing fileName, contentType, and base64Data</returns>
-    /// <response code="200">File retrieved successfully as base64</response>
-    /// <response code="400">File path is required</response>
-    /// <response code="404">File not found</response>
-    /// <response code="500">Server error occurred</response>
-    /// <remarks>
-    /// Sample request:
-    ///
-    ///     GET /img/base64/photo.jpg
-    ///
-    /// Returns:
-    ///
-    ///     {
-    ///       "fileName": "photo.jpg",
-    ///       "contentType": "image/jpeg",
-    ///       "base64Data": "iVBORw0KGgoAAAANSUhEUgAA..."
-    ///     }
-    ///
-    /// If the file path doesn't include an extension, the API will automatically try allowed extensions (.jpg, .png, etc.)
-    /// </remarks>
     [HttpGet("base64/{*filePath}")]
     [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath" })]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -99,6 +75,93 @@ public class FilesController : ControllerBase
         {
             _logger.LogError(ex, "Error retrieving file as base64: {FilePath}", filePath);
             return StatusCode(500, "An error occurred while retrieving the file");
+        }
+    }
+
+    [HttpGet("base64/thumbnail/{*filePath}")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath" })]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetThumbnailAsBase64(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+        {
+            return BadRequest(new { message = "File path is required" });
+        }
+
+        try
+        {
+            var result = await _fileService.GetThumbnailAsBase64Async(filePath);
+
+            if (result == null)
+            {
+                return NotFound(new { message = "File not found" });
+            }
+
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+            }
+
+            return Ok(new
+            {
+                fileName = result.Value.fileName,
+                contentType = result.Value.contentType,
+                base64Data = result.Value.base64Data
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving thumbnail as base64: {FilePath}", filePath);
+            return StatusCode(500, "An error occurred while retrieving the thumbnail");
+        }
+    }
+
+    [HttpGet("base64/mobile/{*filePath}")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath", "maxWidth", "maxHeight", "quality" })]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetMobileImageAsBase64(string filePath, [FromQuery] int? maxWidth, [FromQuery] int? maxHeight, [FromQuery] int? quality)
+    {
+        if (string.IsNullOrEmpty(filePath))
+        {
+            return BadRequest(new { message = "File path is required" });
+        }
+
+        if (quality.HasValue && (quality.Value < 1 || quality.Value > 100))
+        {
+            return BadRequest(new { message = "Quality must be between 1 and 100" });
+        }
+
+        try
+        {
+            var result = await _fileService.GetCompressedImageAsBase64Async(filePath, maxWidth, maxHeight, quality);
+
+            if (result == null)
+            {
+                return NotFound(new { message = "File not found" });
+            }
+
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+            }
+
+            return Ok(new
+            {
+                fileName = result.Value.fileName,
+                contentType = result.Value.contentType,
+                base64Data = result.Value.base64Data
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving mobile image as base64: {FilePath}", filePath);
+            return StatusCode(500, "An error occurred while retrieving the mobile image");
         }
     }
 
