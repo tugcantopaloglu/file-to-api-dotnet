@@ -138,6 +138,13 @@ Response:
     "CompressionQuality": 75,
     "CacheDurationSeconds": 3600,
     "EnableResponseCaching": true
+  },
+  "Cors": {
+    "AllowAnyOrigin": true,
+    "AllowedOrigins": [],
+    "AllowAnyMethod": true,
+    "AllowAnyHeader": true,
+    "AllowCredentials": false
   }
 }
 ```
@@ -287,6 +294,40 @@ curl -X POST https://localhost:5001/api/auth/refresh \
 - Batch operations process files concurrently
 - Maximum performance for multi-file requests
 - Individual file errors don't fail entire batch
+
+### CORS Configuration
+Configure Cross-Origin Resource Sharing for your web applications:
+
+**Default (Allow All - Development):**
+```json
+{
+  "Cors": {
+    "AllowAnyOrigin": true,
+    "AllowedOrigins": [],
+    "AllowAnyMethod": true,
+    "AllowAnyHeader": true,
+    "AllowCredentials": false
+  }
+}
+```
+
+**Restricted (Production):**
+```json
+{
+  "Cors": {
+    "AllowAnyOrigin": false,
+    "AllowedOrigins": ["https://myapp.com", "https://admin.myapp.com"],
+    "AllowAnyMethod": true,
+    "AllowAnyHeader": true,
+    "AllowCredentials": true
+  }
+}
+```
+
+**Notes:**
+- `AllowCredentials` requires specific origins (cannot use with `AllowAnyOrigin: true`)
+- For mobile apps accessing local network, use `AllowAnyOrigin: true`
+- For production web apps, specify exact origins for security
 
 ## 🐳 Docker Deployment
 

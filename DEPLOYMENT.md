@@ -97,6 +97,16 @@ Full control over all settings with command-line parameters.
 | `-CompressionQuality` | Int | 75 | JPEG/WebP quality (1-100) |
 | `-CacheDurationSeconds` | Int | 3600 | Response cache duration |
 
+### CORS Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-CorsAllowAnyOrigin` | Bool | $true | Allow requests from any origin |
+| `-CorsAllowedOrigins` | Array | @() | Specific allowed origins |
+| `-CorsAllowAnyMethod` | Bool | $true | Allow any HTTP method |
+| `-CorsAllowAnyHeader` | Bool | $true | Allow any HTTP header |
+| `-CorsAllowCredentials` | Bool | $false | Allow credentials (requires specific origins) |
+
 ## 📝 Usage Examples
 
 ### Example 1: Basic Windows Deployment
@@ -190,6 +200,26 @@ Full control over all settings with command-line parameters.
 - Docker deployment with AD authentication
 - Custom image processing settings
 - Ready to build and save image
+
+### Example 6: Production with Restricted CORS
+
+```powershell
+.\deploy-closed-network.ps1 `
+    -DeploymentType Windows `
+    -FileStoragePath "D:\Files" `
+    -EnableAuthentication $true `
+    -ADDomain "company.local" `
+    -CorsAllowAnyOrigin $false `
+    -CorsAllowedOrigins @("https://app.company.com", "https://admin.company.com") `
+    -CorsAllowCredentials $true `
+    -OutputPath ".\deploy-windows-secure"
+```
+
+**Result:**
+- Windows deployment with AD authentication
+- CORS restricted to specific domains
+- Credentials allowed for authenticated requests
+- Enhanced security for production
 
 ## 🔄 Deployment Process
 

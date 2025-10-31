@@ -15,6 +15,7 @@ builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection
 builder.Services.Configure<ActiveDirectorySettings>(builder.Configuration.GetSection("ActiveDirectory"));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<ImageProcessingSettings>(builder.Configuration.GetSection("ImageProcessing"));
+builder.Services.Configure<CorsSettings>(builder.Configuration.GetSection("Cors"));
 
 var authSettings = builder.Configuration.GetSection("Authentication").Get<AuthenticationSettings>();
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
@@ -184,28 +185,52 @@ For complete documentation, visit the [GitHub Repository](https://github.com/you
     }
 });
 
+var corsSettings = builder.Configuration.GetSection("Cors").Get<CorsSettings>() ?? new CorsSettings();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("ApiCorsPolicy", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (corsSettings.AllowAnyOrigin)
+        {
+            policy.AllowAnyOrigin();
+        }
+        else if (corsSettings.AllowedOrigins?.Length > 0)
+        {
+            policy.WithOrigins(corsSettings.AllowedOrigins);
+        }
+
+        if (corsSettings.AllowAnyMethod)
+        {
+            policy.AllowAnyMethod();
+        }
+
+        if (corsSettings.AllowAnyHeader)
+        {
+            policy.AllowAnyHeader();
+        }
+
+        if (corsSettings.AllowCredentials && !corsSettings.AllowAnyOrigin)
+        {
+            policy.AllowCredentials();
+        }
     });
 });
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger in all environments (useful for closed networks)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "File & Image API v1.0.0");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseHttpsRedirection();
 app.UseResponseCompression();
 app.UseResponseCaching();
-app.UseCors("AllowAll");
+app.UseCors("ApiCorsPolicy");
 
 if (authSettings?.Enabled == true)
 {

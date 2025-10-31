@@ -69,7 +69,23 @@ param(
     [int]$CompressionQuality = 75,
 
     [Parameter(Mandatory=$false)]
-    [int]$CacheDurationSeconds = 3600
+    [int]$CacheDurationSeconds = 3600,
+
+    # CORS Settings
+    [Parameter(Mandatory=$false)]
+    [bool]$CorsAllowAnyOrigin = $true,
+
+    [Parameter(Mandatory=$false)]
+    [string[]]$CorsAllowedOrigins = @(),
+
+    [Parameter(Mandatory=$false)]
+    [bool]$CorsAllowAnyMethod = $true,
+
+    [Parameter(Mandatory=$false)]
+    [bool]$CorsAllowAnyHeader = $true,
+
+    [Parameter(Mandatory=$false)]
+    [bool]$CorsAllowCredentials = $false
 )
 
 # ============================================================================
@@ -135,6 +151,11 @@ function New-DeploymentConfig {
     # Escape backslashes for JSON
     $escapedFileStoragePath = $FileStoragePath -replace '\\', '\\'
     $escapedAllowedExtensions = ($AllowedExtensions | ForEach-Object { "`"$_`"" }) -join ", "
+    $escapedCorsOrigins = if ($CorsAllowedOrigins.Count -gt 0) {
+        ($CorsAllowedOrigins | ForEach-Object { "`"$_`"" }) -join ", "
+    } else {
+        ""
+    }
 
     $config = @"
 {
@@ -177,6 +198,13 @@ function New-DeploymentConfig {
     "CompressionQuality": $CompressionQuality,
     "CacheDurationSeconds": $CacheDurationSeconds,
     "EnableResponseCaching": true
+  },
+  "Cors": {
+    "AllowAnyOrigin": $($CorsAllowAnyOrigin.ToString().ToLower()),
+    "AllowedOrigins": [$escapedCorsOrigins],
+    "AllowAnyMethod": $($CorsAllowAnyMethod.ToString().ToLower()),
+    "AllowAnyHeader": $($CorsAllowAnyHeader.ToString().ToLower()),
+    "AllowCredentials": $($CorsAllowCredentials.ToString().ToLower())
   }
 }
 "@

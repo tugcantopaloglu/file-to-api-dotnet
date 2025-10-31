@@ -100,6 +100,32 @@ POST /api/auth/refresh  - Refresh token
 }
 ```
 
+### CORS (Cross-Origin Resource Sharing)
+```json
+{
+  "Cors": {
+    "AllowAnyOrigin": true,
+    "AllowedOrigins": [],
+    "AllowAnyMethod": true,
+    "AllowAnyHeader": true,
+    "AllowCredentials": false
+  }
+}
+```
+
+**Production (Restricted):**
+```json
+{
+  "Cors": {
+    "AllowAnyOrigin": false,
+    "AllowedOrigins": ["https://myapp.com"],
+    "AllowAnyMethod": true,
+    "AllowAnyHeader": true,
+    "AllowCredentials": true
+  }
+}
+```
+
 ## 🚀 Running the Application
 
 **Windows:**
@@ -180,6 +206,9 @@ curl http://localhost:5000/img/photo.jpg \
 -MobileMaxWidth 800
 -CompressionQuality 75
 -ADDomain "company.local"
+-CorsAllowAnyOrigin $true
+-CorsAllowedOrigins @("https://app.com")
+-CorsAllowCredentials $false
 -OutputPath ".\deploy-package"
 ```
 
