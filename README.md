@@ -145,10 +145,11 @@ Response:
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **.NET 8.0 SDK** or later
+- **.NET 8.0 SDK** or later (for building)
 - **Windows Server** with Active Directory (optional, for authentication)
+- **PowerShell** (for deployment scripts)
 
-### Quick Start
+### Quick Start (Development)
 
 1. **Clone the repository:**
 ```bash
@@ -169,6 +170,27 @@ dotnet run --project src/FileToApi
 4. **Access the API:**
 - Swagger UI: `https://localhost:5001/swagger`
 - Health Check: `https://localhost:5001/health`
+
+### Quick Start (Closed Network Deployment)
+
+For deploying to **closed/air-gapped networks** without internet:
+
+1. **Run deployment script** (on internet-connected machine):
+```powershell
+.\deploy-quick.ps1
+```
+
+2. **Select deployment type:**
+   - Windows Server (No Authentication)
+   - Windows Server (With Active Directory)
+   - Linux Server
+   - Docker Container
+
+3. **Transfer package** to closed network
+
+4. **Deploy and run** on target server
+
+**📖 Complete deployment guide:** See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions and all configuration options.
 
 ## 📱 Mobile App Integration
 
