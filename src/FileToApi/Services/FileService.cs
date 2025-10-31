@@ -1,17 +1,23 @@
 using FileToApi.Models;
 using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
 
 namespace FileToApi.Services;
 
 public class FileService : IFileService
 {
     private readonly FileStorageSettings _settings;
+    private readonly ImageProcessingSettings _imageSettings;
     private readonly ILogger<FileService> _logger;
     private readonly string _storagePath;
 
-    public FileService(IOptions<FileStorageSettings> settings, ILogger<FileService> logger)
+    public FileService(IOptions<FileStorageSettings> settings, IOptions<ImageProcessingSettings> imageSettings, ILogger<FileService> logger)
     {
         _settings = settings.Value;
+        _imageSettings = imageSettings.Value;
         _logger = logger;
 
         if (Path.IsPathRooted(_settings.RootPath))
@@ -263,5 +269,113 @@ public class FileService : IFileService
             ".json" => "application/json",
             _ => "application/octet-stream"
         };
+    }
+
+    public async Task<(byte[] content, string contentType)?> GetThumbnailAsync(string fileName)
+    {
+        var fileResult = await GetFileAsync(fileName);
+        if (fileResult == null)
+        {
+            return null;
+        }
+
+        var (bytes, contentType) = fileResult.Value;
+
+        // Only process image files
+        if (!contentType.StartsWith("image/"))
+        {
+            return fileResult;
+        }
+
+        try
+        {
+            using var image = Image.Load(bytes);
+
+            // Calculate new dimensions maintaining aspect ratio
+            var ratioX = (double)_imageSettings.ThumbnailMaxWidth / image.Width;
+            var ratioY = (double)_imageSettings.ThumbnailMaxHeight / image.Height;
+            var ratio = Math.Min(ratioX, ratioY);
+
+            var newWidth = (int)(image.Width * ratio);
+            var newHeight = (int)(image.Height * ratio);
+
+            image.Mutate(x => x.Resize(newWidth, newHeight));
+
+            using var ms = new MemoryStream();
+            if (contentType == "image/png")
+            {
+                await image.SaveAsPngAsync(ms);
+            }
+            else
+            {
+                await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = _imageSettings.CompressionQuality });
+            }
+
+            return (ms.ToArray(), contentType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating thumbnail for: {FileName}", fileName);
+            return fileResult; // Return original if processing fails
+        }
+    }
+
+    public async Task<(byte[] content, string contentType)?> GetCompressedImageAsync(string fileName, int? maxWidth = null, int? maxHeight = null, int? quality = null)
+    {
+        var fileResult = await GetFileAsync(fileName);
+        if (fileResult == null)
+        {
+            return null;
+        }
+
+        var (bytes, contentType) = fileResult.Value;
+
+        // Only process image files
+        if (!contentType.StartsWith("image/"))
+        {
+            return fileResult;
+        }
+
+        try
+        {
+            using var image = Image.Load(bytes);
+
+            var targetWidth = maxWidth ?? _imageSettings.MobileMaxWidth;
+            var targetHeight = maxHeight ?? _imageSettings.MobileMaxHeight;
+            var targetQuality = quality ?? _imageSettings.CompressionQuality;
+
+            // Only resize if image is larger than target dimensions
+            if (image.Width > targetWidth || image.Height > targetHeight)
+            {
+                var ratioX = (double)targetWidth / image.Width;
+                var ratioY = (double)targetHeight / image.Height;
+                var ratio = Math.Min(ratioX, ratioY);
+
+                var newWidth = (int)(image.Width * ratio);
+                var newHeight = (int)(image.Height * ratio);
+
+                image.Mutate(x => x.Resize(newWidth, newHeight));
+            }
+
+            using var ms = new MemoryStream();
+            if (contentType == "image/png")
+            {
+                await image.SaveAsPngAsync(ms);
+            }
+            else
+            {
+                await image.SaveAsJpegAsync(ms, new JpegEncoder { Quality = targetQuality });
+            }
+
+            _logger.LogInformation("Compressed image {FileName}: Original size: {OriginalSize} bytes, Compressed size: {CompressedSize} bytes",
+                fileName, bytes.Length, ms.Length);
+
+            return (ms.ToArray(), contentType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error compressing image: {FileName}", fileName);
+            return fileResult; // Return original if processing fails
+        }
     }
 }

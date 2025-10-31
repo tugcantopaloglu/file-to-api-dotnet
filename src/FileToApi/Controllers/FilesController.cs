@@ -1,7 +1,9 @@
 using FileToApi.Attributes;
+using FileToApi.Models;
 using FileToApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace FileToApi.Controllers;
 
@@ -11,11 +13,13 @@ public class FilesController : ControllerBase
 {
     private readonly IFileService _fileService;
     private readonly ILogger<FilesController> _logger;
+    private readonly ImageProcessingSettings _imageSettings;
 
-    public FilesController(IFileService fileService, ILogger<FilesController> logger)
+    public FilesController(IFileService fileService, ILogger<FilesController> logger, IOptions<ImageProcessingSettings> imageSettings)
     {
         _fileService = fileService;
         _logger = logger;
+        _imageSettings = imageSettings.Value;
     }
 
     //[HttpGet]
@@ -58,6 +62,7 @@ public class FilesController : ControllerBase
     /// If the file path doesn't include an extension, the API will automatically try allowed extensions (.jpg, .png, etc.)
     /// </remarks>
     [HttpGet("base64/{*filePath}")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath" })]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -78,6 +83,11 @@ public class FilesController : ControllerBase
                 return NotFound(new { message = "File not found" });
             }
 
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+            }
+
             return Ok(new
             {
                 fileName = result.Value.fileName,
@@ -89,6 +99,127 @@ public class FilesController : ControllerBase
         {
             _logger.LogError(ex, "Error retrieving file as base64: {FilePath}", filePath);
             return StatusCode(500, "An error occurred while retrieving the file");
+        }
+    }
+
+    /// <summary>
+    /// Retrieves a thumbnail version of an image (150x150 max by default).
+    /// </summary>
+    /// <param name="filePath">The relative path to the image file</param>
+    /// <returns>Resized image maintaining aspect ratio</returns>
+    /// <response code="200">Thumbnail retrieved successfully</response>
+    /// <response code="400">File path is required</response>
+    /// <response code="404">File not found</response>
+    /// <response code="500">Server error occurred</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET /img/thumbnail/photo.jpg
+    ///
+    /// Returns a smaller version of the image optimized for thumbnails.
+    /// Non-image files are returned as-is without processing.
+    /// </remarks>
+    [HttpGet("thumbnail/{*filePath}")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath" })]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetThumbnail(string filePath)
+    {
+        if (string.IsNullOrEmpty(filePath))
+        {
+            return BadRequest(new { message = "File path is required" });
+        }
+
+        try
+        {
+            var result = await _fileService.GetThumbnailAsync(filePath);
+
+            if (result == null)
+            {
+                return NotFound(new { message = "File not found" });
+            }
+
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+            }
+
+            var fileName = Path.GetFileName(filePath);
+            return File(result.Value.content, result.Value.contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving thumbnail: {FilePath}", filePath);
+            return StatusCode(500, "An error occurred while retrieving the thumbnail");
+        }
+    }
+
+    /// <summary>
+    /// Retrieves a compressed/resized version of an image optimized for mobile devices.
+    /// </summary>
+    /// <param name="filePath">The relative path to the image file</param>
+    /// <param name="maxWidth">Optional maximum width (default: 800px from config)</param>
+    /// <param name="maxHeight">Optional maximum height (default: 800px from config)</param>
+    /// <param name="quality">Optional JPEG quality 1-100 (default: 75 from config)</param>
+    /// <returns>Compressed and resized image maintaining aspect ratio</returns>
+    /// <response code="200">Compressed image retrieved successfully</response>
+    /// <response code="400">File path is required or invalid parameters</response>
+    /// <response code="404">File not found</response>
+    /// <response code="500">Server error occurred</response>
+    /// <remarks>
+    /// Sample requests:
+    ///
+    ///     GET /img/mobile/photo.jpg
+    ///     Uses default settings (800x800 max, quality 75)
+    ///
+    ///     GET /img/mobile/photo.jpg?maxWidth=600&amp;maxHeight=600&amp;quality=80
+    ///     Custom size and quality
+    ///
+    /// Perfect for mobile apps to reduce bandwidth and improve loading times.
+    /// Images are only resized if they exceed the specified dimensions.
+    /// Non-image files are returned as-is without processing.
+    /// </remarks>
+    [HttpGet("mobile/{*filePath}")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath", "maxWidth", "maxHeight", "quality" })]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetMobileImage(string filePath, [FromQuery] int? maxWidth, [FromQuery] int? maxHeight, [FromQuery] int? quality)
+    {
+        if (string.IsNullOrEmpty(filePath))
+        {
+            return BadRequest(new { message = "File path is required" });
+        }
+
+        if (quality.HasValue && (quality.Value < 1 || quality.Value > 100))
+        {
+            return BadRequest(new { message = "Quality must be between 1 and 100" });
+        }
+
+        try
+        {
+            var result = await _fileService.GetCompressedImageAsync(filePath, maxWidth, maxHeight, quality);
+
+            if (result == null)
+            {
+                return NotFound(new { message = "File not found" });
+            }
+
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+            }
+
+            var fileName = Path.GetFileName(filePath);
+            return File(result.Value.content, result.Value.contentType, fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving mobile image: {FilePath}", filePath);
+            return StatusCode(500, "An error occurred while retrieving the mobile image");
         }
     }
 
@@ -118,6 +249,7 @@ public class FilesController : ControllerBase
     /// If the file path doesn't include an extension, the API will automatically try allowed extensions (.jpg, .png, etc.)
     /// </remarks>
     [HttpGet("{*filePath}")]
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "filePath" })]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -142,6 +274,11 @@ public class FilesController : ControllerBase
                     return NotFound(new { message = "File not found" });
                 }
 
+                if (_imageSettings.EnableResponseCaching)
+                {
+                    Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+                }
+
                 return Ok(metadata);
             }
             catch (Exception ex)
@@ -158,6 +295,11 @@ public class FilesController : ControllerBase
             if (result == null)
             {
                 return NotFound(new { message = "File not found" });
+            }
+
+            if (_imageSettings.EnableResponseCaching)
+            {
+                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
             }
 
             var fileName = Path.GetFileName(filePath);

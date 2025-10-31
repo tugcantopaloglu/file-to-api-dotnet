@@ -14,6 +14,7 @@ builder.Services.Configure<AuthorizationSettings>(builder.Configuration.GetSecti
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<ActiveDirectorySettings>(builder.Configuration.GetSection("ActiveDirectory"));
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<ImageProcessingSettings>(builder.Configuration.GetSection("ImageProcessing"));
 
 var authSettings = builder.Configuration.GetSection("Authentication").Get<AuthenticationSettings>();
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
@@ -52,6 +53,12 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
 builder.Services.AddSingleton<IRateLimitingService, RateLimitingService>();
+
+builder.Services.AddResponseCaching();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -120,6 +127,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseResponseCompression();
+app.UseResponseCaching();
 app.UseCors("AllowAll");
 
 if (authSettings?.Enabled == true)
