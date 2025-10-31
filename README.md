@@ -1,297 +1,216 @@
 # File to API - .NET
 
-A production-ready read-only REST API for serving files with configurable Microsoft Active Directory (LDAP) authentication.
+A production-ready **Image & File API** with advanced image processing capabilities, built on .NET 8. Perfect for mobile apps, web applications, and microservices architectures.
 
-## Features
+## 🚀 Features
 
-- RESTful API for file operations (list, download, view metadata)
-- Read-only access - no upload or delete capabilities
-- Configurable authentication (enable/disable via config)
-- Microsoft Active Directory (LDAP) authentication with JWT tokens
-- User and group information from Active Directory
-- Comprehensive error handling and logging
-- Swagger/OpenAPI documentation
-- CORS support
+### Core Features
+- **RESTful API** for file operations (download, metadata, base64 encoding)
+- **Image Processing** - Thumbnails, compression, and mobile optimization
+- **WebP Support** - Modern image format with superior compression
+- **Batch Operations** - Load multiple files in a single request
+- **Response Caching** - Built-in caching for optimal performance
+- **Gzip Compression** - Automatic response compression
+- **Auto Extension Detection** - Files work with or without extensions
+- **Health Checks** - Monitoring endpoints for load balancers
 
-## Project Structure
+### Security & Authentication
+- **JWT Authentication** - Token-based security
+- **Active Directory Integration** - LDAP authentication
+- **Rate Limiting** - Protection against abuse
+- **Refresh Tokens** - Long-lived sessions
+- **User/Group Authorization** - Fine-grained access control
+- **Path Sanitization** - Security against directory traversal
 
+### Developer Experience
+- **Swagger/OpenAPI** - Interactive API documentation
+- **CORS Support** - Cross-origin resource sharing
+- **Comprehensive Logging** - Detailed error tracking
+- **Docker Ready** - Easy containerization
+- **IIS Compatible** - Windows Server deployment
+
+## 📋 API Endpoints
+
+### Single File Endpoints (GET)
+
+| Endpoint | Format | Description | Example |
+|----------|--------|-------------|---------|
+| `/img/{path}` | Binary | Get raw file | `/img/photo.jpg` |
+| `/img/{path}/metadata` | JSON | Get file metadata | `/img/photo.jpg/metadata` |
+| `/img/base64/{path}` | JSON + Base64 | Get file as base64 | `/img/base64/photo` |
+| `/img/thumbnail/{path}` | Binary | Get 150x150 thumbnail | `/img/thumbnail/photo.jpg` |
+| `/img/base64/thumbnail/{path}` | JSON + Base64 | Thumbnail as base64 | `/img/base64/thumbnail/photo` |
+| `/img/mobile/{path}` | Binary | Mobile-optimized (800x800) | `/img/mobile/photo.jpg?quality=80` |
+| `/img/base64/mobile/{path}` | JSON + Base64 | Mobile image as base64 | `/img/base64/mobile/photo?quality=80` |
+
+### Batch Endpoints (POST)
+
+| Endpoint | Purpose | Request Body |
+|----------|---------|--------------|
+| `POST /img/batch/base64` | Multiple files as base64 | `{"filePaths": ["photo1.jpg", "photo2"]}` |
+| `POST /img/batch/thumbnail` | Multiple thumbnails | `{"filePaths": ["photo1", "photo2"]}` |
+| `POST /img/batch/mobile` | Multiple mobile images | `{"filePaths": ["photo1.jpg", "photo2"]}` |
+
+### System Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health` | Health check for monitoring |
+| `GET /swagger` | Interactive API documentation |
+| `POST /api/auth/login` | Authenticate with Active Directory |
+| `POST /api/auth/refresh` | Refresh JWT token |
+| `GET /api/auth/status` | Check authentication status |
+
+## 🎨 Image Processing Features
+
+### Thumbnails
+- **Size:** 150x150px (configurable)
+- **Aspect Ratio:** Maintained automatically
+- **Format:** Preserves original format (JPEG, PNG, WebP, GIF)
+- **Quality:** Configurable compression
+
+### Mobile Optimization
+- **Default Size:** 800x800px (configurable)
+- **Smart Resizing:** Only resizes if image is larger
+- **Quality Control:** Adjustable JPEG/WebP quality (1-100)
+- **Format Support:** JPEG, PNG, WebP, GIF
+
+### Batch Operations
+```json
+POST /img/batch/mobile?maxWidth=600&maxHeight=600&quality=85
+{
+  "filePaths": ["user1/avatar", "user2/avatar", "user3/avatar"]
+}
+
+Response:
+{
+  "files": [
+    {
+      "requestedPath": "user1/avatar",
+      "fileName": "avatar.jpg",
+      "contentType": "image/jpeg",
+      "base64Data": "iVBORw0KGgoAAAA...",
+      "found": true,
+      "error": null
+    }
+  ],
+  "totalRequested": 3,
+  "totalFound": 3,
+  "totalNotFound": 0
+}
 ```
-src/FileToApi/
-├── Controllers/         - API endpoints
-├── Services/           - Business logic
-├── Models/             - Data models and settings
-├── Attributes/         - Custom attributes
-├── Files/              - File storage location
-└── appsettings.json    - Configuration
-```
 
-## Configuration
+## ⚙️ Configuration
 
-### Authentication Settings
-
-Edit `appsettings.json` to configure authentication:
+### appsettings.json
 
 ```json
 {
   "Authentication": {
-    "Enabled": true
-  }
-}
-```
-
-- `Enabled`: Set to `true` to require authentication, `false` to disable
-
-### Authorization Settings
-
-Limit access to specific users or AD groups:
-
-```json
-{
+    "Enabled": false
+  },
   "Authorization": {
-    "AllowedUsers": ["jdoe", "asmith", "mjones"],
-    "AllowedGroups": ["Domain Admins", "File-Readers", "IT-Staff"]
-  }
-}
-```
-
-- `AllowedUsers`: List of AD usernames allowed to access files (case-insensitive)
-- `AllowedGroups`: List of AD group names allowed to access files (case-insensitive)
-- If both lists are empty, all authenticated users can access files
-- Users are granted access if they are in **either** the AllowedUsers list **OR** a member of any AllowedGroups
-
-**Examples:**
-
-Only specific users:
-```json
-{
-  "Authorization": {
-    "AllowedUsers": ["admin", "manager"],
-    "AllowedGroups": []
-  }
-}
-```
-
-Only specific AD groups:
-```json
-{
-  "Authorization": {
-    "AllowedUsers": [],
-    "AllowedGroups": ["IT-Team", "Executives"]
-  }
-}
-```
-
-Mix of both (user OR group member):
-```json
-{
-  "Authorization": {
-    "AllowedUsers": ["contractor1"],
-    "AllowedGroups": ["Full-Time-Employees"]
-  }
-}
-```
-
-Allow all authenticated users:
-```json
-{
-  "Authorization": {
-    "AllowedUsers": [],
-    "AllowedGroups": []
-  }
-}
-```
-
-### Active Directory Configuration
-
-Configure your on-premises Active Directory settings:
-
-```json
-{
+    "AllowedUsers": ["user1", "user2"],
+    "AllowedGroups": ["Domain Admins", "File-Readers"]
+  },
   "ActiveDirectory": {
-    "Domain": "yourdomain.local",
-    "LdapPath": "LDAP://yourdomain.local",
-    "Container": "DC=yourdomain,DC=local"
-  }
-}
-```
-
-- `Domain`: Your Active Directory domain name
-- `LdapPath`: LDAP connection string to your domain controller
-- `Container`: The distinguished name (DN) of your AD container
-
-### JWT Token Configuration
-
-Configure JWT token settings for authenticated sessions:
-
-```json
-{
+    "Domain": "domain.local",
+    "LdapPath": "LDAP://domain.local",
+    "Container": "DC=domain,DC=local"
+  },
   "JwtSettings": {
-    "SecretKey": "your-secret-key-must-be-at-least-32-characters-long",
-    "Issuer": "https://yourcompany.com",
+    "SecretKey": "your-secret-key-here-min-32-chars",
+    "Issuer": "your-issuer",
     "Audience": "file-api",
-    "ExpirationMinutes": 60
-  }
-}
-```
-
-- `SecretKey`: Secret key for signing JWT tokens (min 32 characters)
-- `Issuer`: Token issuer identifier
-- `Audience`: Token audience identifier
-- `ExpirationMinutes`: Token validity duration
-
-### File Storage Settings
-
-```json
-{
+    "ExpirationMinutes": 120,
+    "RefreshTokenExpirationDays": 7
+  },
   "FileStorage": {
-    "RootPath": "C:\\SharedFiles",
+    "RootPath": "C:\\Files",
     "MaxFileSize": 52428800,
-    "AllowedExtensions": [".png", ".jpg", ".jpeg", ".gif", ".pdf", ".txt", ".json"]
+    "AllowedExtensions": [".png", ".jpg", ".jpeg", ".webp", ".gif"]
+  },
+  "ImageProcessing": {
+    "ThumbnailMaxWidth": 150,
+    "ThumbnailMaxHeight": 150,
+    "MobileMaxWidth": 800,
+    "MobileMaxHeight": 800,
+    "CompressionQuality": 75,
+    "CacheDurationSeconds": 3600,
+    "EnableResponseCaching": true
   }
 }
 ```
 
-- `RootPath`: Directory where files are stored (supports both absolute and relative paths)
-  - **Absolute path**: `C:\\SharedFiles` or `D:\\Data\\Files`
-  - **Relative path**: `Files` (relative to application directory)
-  - **UNC path**: `\\\\ServerName\\SharedFolder\\Files`
-- `MaxFileSize`: Not applicable for read-only API (kept for compatibility)
-- `AllowedExtensions`: Not applicable for read-only API (kept for compatibility)
-
-**Note**: Files must be placed in the `RootPath` directory manually or through other means. This API only provides read access to existing files.
-
-### Folder Structure
-
-You can organize files in subdirectories:
-
-```
-Files/
-├── images/
-│   ├── test.png
-│   └── test2.png
-├── documents/
-│   └── report.pdf
-└── root-file.txt
-```
-
-Access files using their relative path:
-- `/img/photos/vacation.jpg`
-- `/img/logos/company.png`
-- `/img/banner.jpg`
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
+- **.NET 8.0 SDK** or later
+- **Windows Server** with Active Directory (optional, for authentication)
 
-- .NET 8.0 SDK or later
-- Windows Server with Active Directory (for authentication)
-- Server must be domain-joined (if authentication is enabled)
+### Quick Start
 
-### Running the Application
-
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/yourusername/file-to-api-dotnet.git
 cd file-to-api-dotnet
 ```
 
-2. Build the project:
+2. **Build the project:**
 ```bash
 dotnet build
 ```
 
-3. Run the application:
+3. **Run the application:**
 ```bash
 dotnet run --project src/FileToApi
 ```
 
-4. Access the API:
-- Swagger UI: https://localhost:5001/swagger
-- API Base URL: https://localhost:5001/api
+4. **Access the API:**
+- Swagger UI: `https://localhost:5001/swagger`
+- Health Check: `https://localhost:5001/health`
 
-### Development Mode
+## 📱 Mobile App Integration
 
-By default, authentication is disabled in development mode (see `appsettings.Development.json`).
-
-To enable authentication in development:
-```json
+### Loading a User Gallery
+```javascript
+// Load multiple thumbnails in one request
+POST /img/batch/thumbnail
 {
-  "Authentication": {
-    "Enabled": true
-  }
+  "filePaths": ["user/photo1", "user/photo2", "user/photo3", "user/photo4"]
+}
+
+// Returns all 4 thumbnails as base64 in one response
+// No extensions needed - auto-detection included!
+```
+
+### Feed with Images
+```javascript
+// Load mobile-optimized images for a feed
+POST /img/batch/mobile?quality=85
+{
+  "filePaths": ["posts/post1", "posts/post2", "posts/post3"]
+}
+
+// Returns compressed images perfect for mobile scrolling
+```
+
+### Profile Picture
+```javascript
+// Get single thumbnail
+GET /img/base64/thumbnail/users/john-doe
+
+// Response:
+{
+  "fileName": "john-doe.jpg",
+  "contentType": "image/jpeg",
+  "base64Data": "iVBORw0KGgoAAAANSUhEUg..."
 }
 ```
 
-## API Endpoints
+## 🔐 Authentication
 
-### Authentication
-
-#### Login
-```
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "username": "your-ad-username",
-  "password": "your-password"
-}
-```
-
-Returns a JWT token for authenticated requests. The username should be the Active Directory SAM account name (e.g., "jdoe" not "jdoe@domain.com").
-
-Response:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "username": "jdoe",
-  "expiresAt": "2025-10-30T10:30:00Z"
-}
-```
-
-#### Check Auth Status
-```
-GET /api/auth/status
-```
-
-Returns current authentication configuration status.
-
-### File Operations
-
-#### Get File
-```
-GET /img/{filePath}
-```
-
-Downloads the specified file. Supports subdirectories.
-
-Examples:
-- `GET /img/photo.jpg` - File in root
-- `GET /img/gallery/photo.jpg` - File in gallery folder
-- `GET /img/2024/vacation/beach.png` - Nested folders
-
-#### Get File Metadata
-```
-GET /img/{filePath}/metadata
-```
-
-Returns metadata for a specific file (size, content type, dates).
-
-Examples:
-- `GET /img/photo.jpg/metadata`
-- `GET /img/gallery/photo.jpg/metadata`
-
-## Authentication
-
-When authentication is enabled, include the JWT token in the Authorization header:
-
-```
-Authorization: Bearer <your-token>
-```
-
-### Getting a Token (Active Directory)
-
-Login with your Active Directory credentials to obtain a JWT token:
-
+### Login (Active Directory)
 ```bash
 curl -X POST https://localhost:5001/api/auth/login \
   -H "Content-Type: application/json" \
@@ -301,222 +220,195 @@ curl -X POST https://localhost:5001/api/auth/login \
   }'
 ```
 
-The API will validate your credentials against Active Directory and return a JWT token that includes your AD groups as roles.
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "refresh-token-here",
+  "username": "jdoe",
+  "displayName": "John Doe",
+  "email": "jdoe@company.com",
+  "expiresAt": "2025-10-30T10:30:00Z"
+}
+```
 
-### Testing Without Authentication
-
-Set `"Enabled": false` in the Authentication section of `appsettings.json` or `appsettings.Development.json`.
-
-## Examples
-
-### Login to Get Token
-
+### Using the Token
 ```bash
-curl -X POST https://localhost:5001/api/auth/login \
+curl https://localhost:5001/img/photo.jpg \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -o photo.jpg
+```
+
+### Refresh Token
+```bash
+curl -X POST https://localhost:5001/api/auth/refresh \
   -H "Content-Type: application/json" \
-  -d '{"username":"jdoe","password":"yourpassword"}'
+  -d '{
+    "refreshToken": "your-refresh-token"
+  }'
 ```
 
-### Download a File (from root)
+## 📊 Performance Features
 
-```bash
-curl https://localhost:5001/img/photo.jpg \
-  -o photo.jpg
+### Response Caching
+- **Duration:** 1 hour (configurable)
+- **Cache Headers:** Automatic `Cache-Control` headers
+- **Vary By:** Path and query parameters
+- **Benefits:** Reduced server load, faster responses
+
+### Gzip Compression
+- **Automatic:** All JSON/text responses compressed
+- **HTTPS Compatible:** Works with SSL/TLS
+- **Savings:** 60-80% bandwidth reduction for base64 responses
+
+### Parallel Processing
+- Batch operations process files concurrently
+- Maximum performance for multi-file requests
+- Individual file errors don't fail entire batch
+
+## 🐳 Docker Deployment
+
+### Dockerfile
+```dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+COPY ["src/FileToApi/FileToApi.csproj", "src/FileToApi/"]
+RUN dotnet restore "src/FileToApi/FileToApi.csproj"
+COPY . .
+WORKDIR "/src/src/FileToApi"
+RUN dotnet build "FileToApi.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "FileToApi.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "FileToApi.dll"]
 ```
 
-### Download a File (from subdirectory)
-
-```bash
-curl https://localhost:5001/img/gallery/vacation.jpg \
-  -o vacation.jpg
+### Docker Compose
+```yaml
+version: '3.8'
+services:
+  file-api:
+    image: file-to-api:latest
+    ports:
+      - "5000:80"
+      - "5001:443"
+    volumes:
+      - ./files:/app/Files
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Authentication__Enabled=false
+      - FileStorage__RootPath=/app/Files
 ```
 
-### Download with Authentication
+## 🏢 IIS Deployment
 
-```bash
-TOKEN="your-jwt-token-here"
-curl https://localhost:5001/img/photo.jpg \
-  -H "Authorization: Bearer $TOKEN" \
-  -o photo.jpg
-```
+### Prerequisites
+1. Windows Server with IIS
+2. ASP.NET Core Hosting Bundle
+3. .NET 8.0 Runtime
 
-### Get File Metadata
-
-```bash
-curl https://localhost:5001/img/photo.jpg/metadata
-curl https://localhost:5001/img/gallery/vacation.jpg/metadata
-```
-
-## Environment Variables
-
-You can override configuration using environment variables:
-
-```bash
-export Authentication__Enabled=false
-export FileStorage__MaxFileSize=104857600
-dotnet run --project src/FileToApi
-```
-
-## Production Deployment
-
-### IIS Deployment
-
-#### Prerequisites
-1. Windows Server joined to your Active Directory domain
-2. IIS installed with ASP.NET Core Hosting Bundle
-3. .NET 8.0 Runtime installed
-4. Shared folder or drive configured for file storage
-
-#### Step 1: Publish the Application
-
+### Steps
+1. **Publish the application:**
 ```bash
 dotnet publish -c Release -o ./publish
 ```
 
-#### Step 2: Prepare the File Storage Directory
-
-Create your file storage directory and set permissions:
-
-```powershell
-# Create directory
-New-Item -Path "D:\SharedFiles" -ItemType Directory
-
-# Grant IIS AppPool identity read permissions
-icacls "D:\SharedFiles" /grant "IIS AppPool\YourAppPoolName:(OI)(CI)R"
-```
-
-#### Step 3: Configure appsettings.Production.json
-
-Edit `appsettings.Production.json` in the publish folder:
-
-```json
-{
-  "FileStorage": {
-    "RootPath": "D:\\SharedFiles"
-  },
-  "ActiveDirectory": {
-    "Domain": "yourdomain.local",
-    "LdapPath": "LDAP://dc01.yourdomain.local",
-    "Container": "DC=yourdomain,DC=local"
-  },
-  "JwtSettings": {
-    "SecretKey": "your-production-secret-key-at-least-32-characters"
-  }
-}
-```
-
-#### Step 4: Create IIS Application
-
-1. Open IIS Manager
-2. Create a new Application Pool:
+2. **Create IIS Application Pool:**
    - Name: `FileToApiAppPool`
    - .NET CLR Version: No Managed Code
    - Managed Pipeline Mode: Integrated
-   - Identity: Custom account with AD query permissions (or ApplicationPoolIdentity)
-3. Create a new Website or Application:
-   - Physical path: Point to your publish folder
-   - Application Pool: Select `FileToApiAppPool`
-   - Binding: Configure HTTPS binding
 
-#### Step 5: Configure Application Pool Identity
+3. **Create Website/Application:**
+   - Physical path: Point to publish folder
+   - Application Pool: `FileToApiAppPool`
+   - Binding: Configure HTTPS
 
-For Active Directory authentication, the Application Pool identity needs AD permissions:
-
-**Option 1: Use a domain service account**
+4. **Set Permissions:**
 ```powershell
-# In IIS Manager, set Application Pool Identity to:
-# Custom Account -> domain\serviceaccount
+icacls "C:\publish" /grant "IIS AppPool\FileToApiAppPool:(OI)(CI)RX"
+icacls "C:\Files" /grant "IIS AppPool\FileToApiAppPool:(OI)(CI)R"
 ```
 
-**Option 2: Grant ApplicationPoolIdentity AD permissions**
-```powershell
-# Add computer account to AD users group with query permissions
-```
+## 🔧 Troubleshooting
 
-#### Step 6: Set Folder Permissions
-
-```powershell
-# Grant IIS AppPool read access to publish folder
-icacls "C:\inetpub\wwwroot\FileToApi" /grant "IIS AppPool\FileToApiAppPool:(OI)(CI)RX"
-
-# Grant read access to shared files
-icacls "D:\SharedFiles" /grant "IIS AppPool\FileToApiAppPool:(OI)(CI)R"
-```
-
-#### Step 7: Configure web.config (already included)
-
-The `web.config` is included and pre-configured. You can modify it if needed:
-
-```xml
-<aspNetCore processPath="dotnet"
-            arguments=".\FileToApi.dll"
-            stdoutLogEnabled="true"
-            stdoutLogFile=".\logs\stdout"
-            hostingModel="inprocess">
-  <environmentVariables>
-    <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
-  </environmentVariables>
-</aspNetCore>
-```
-
-#### Step 8: Test the Deployment
-
-1. Browse to `https://your-server/api/auth/status`
-2. Check logs in `.\logs\` folder if issues occur
-3. Verify file access: `https://your-server/img/photo.jpg`
-
-### Configuration via web.config
-
-You can override appsettings.json values in web.config:
-
-```xml
-<environmentVariables>
-  <environmentVariable name="FileStorage__RootPath" value="D:\SharedFiles" />
-  <environmentVariable name="Authentication__Enabled" value="true" />
-  <environmentVariable name="ActiveDirectory__Domain" value="yourdomain.local" />
-</environmentVariables>
-```
-
-### Troubleshooting IIS Deployment
-
-- **500.19 Error**: Check web.config syntax and install ASP.NET Core Hosting Bundle
-- **500.30 Error**: Verify .NET 8.0 Runtime is installed
-- **403 Forbidden**: Check Application Pool identity has permissions
-- **AD Authentication Fails**: Ensure AppPool identity can query Active Directory
-- **File Not Found**: Verify RootPath exists and has correct permissions
-
-## Security Considerations
-
-- Always enable authentication in production
-- Use HTTPS in production
-- Rotate JWT secret keys regularly
-- Implement rate limiting for file uploads
-- Scan uploaded files for malware
-- Configure appropriate file size limits
-- Restrict CORS to specific origins in production
-
-## Troubleshooting
+### Image Processing Issues
+- Ensure sufficient memory for large images
+- Check file format is supported (JPEG, PNG, WebP, GIF)
+- Verify ImageSharp packages are installed
 
 ### Authentication Issues
+- Verify Active Directory configuration
+- Ensure server is domain-joined
+- Check JWT secret key length (min 32 chars)
+- Verify token expiration settings
 
-- Verify Active Directory configuration (Domain, LdapPath, Container)
-- Ensure the server is domain-joined
-- Check that the application has permissions to query Active Directory
-- Verify username format (use SAM account name, not UPN)
-- Check token expiration
-- Ensure Bearer token is correctly formatted
-- Verify JWT secret key is properly configured
+### Performance Issues
+- Enable response caching in config
+- Use batch endpoints for multiple files
+- Consider CDN for static files
+- Monitor with `/health` endpoint
 
-### File Upload Issues
+## 📈 Monitoring
 
-- Check file size limits
-- Verify file extension is allowed
-- Ensure Files directory exists and has write permissions
+### Health Check
+```bash
+curl https://localhost:5001/health
+```
 
-## License
+### Metrics (via logs)
+- File access counts
+- Image processing times
+- Batch operation statistics
+- Cache hit rates
+- Authentication attempts
 
-MIT License
+## 🔒 Security Best Practices
 
-## Contributing
+- ✅ Enable authentication in production
+- ✅ Use HTTPS everywhere
+- ✅ Rotate JWT secret keys regularly
+- ✅ Implement rate limiting (included)
+- ✅ Restrict CORS to specific origins
+- ✅ Use refresh tokens for long sessions
+- ✅ Monitor authentication logs
+- ✅ Keep .NET runtime updated
+
+## 📚 Additional Resources
+
+- [Swagger Documentation](https://localhost:5001/swagger) - Interactive API docs
+- [.NET 8 Documentation](https://learn.microsoft.com/en-us/aspnet/core/)
+- [ImageSharp Documentation](https://docs.sixlabors.com/articles/imagesharp/)
+- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
+
+## 🤝 Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+MIT License - See LICENSE file for details
+
+## 🙏 Acknowledgments
+
+- Built with [ASP.NET Core](https://dotnet.microsoft.com/apps/aspnet)
+- Image processing by [ImageSharp](https://sixlabors.com/products/imagesharp/)
+- API documentation by [Swashbuckle](https://github.com/domaindrivendev/Swashbuckle.AspNetCore)
+
+---
+
+**Made with ❤️ for modern web and mobile applications**

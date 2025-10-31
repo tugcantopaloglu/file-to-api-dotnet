@@ -69,9 +69,83 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "User Photo API",
-        Version = "v1",
-        Description = "REST API for user profile pictures."
+        Title = "File & Image API",
+        Version = "v1.0.0",
+        Description = @"
+# Advanced Image & File API
+
+A production-ready REST API with powerful image processing capabilities, perfect for mobile apps and web applications.
+
+## 🚀 Key Features
+
+### Image Processing
+- **Thumbnails**: 150x150px optimized previews
+- **Mobile Optimization**: Compressed images for mobile devices (800x800px default)
+- **WebP Support**: Modern format with 25-35% better compression
+- **Batch Operations**: Load multiple images in a single request
+- **Auto Extension Detection**: Works with or without file extensions
+
+### Performance
+- **Response Caching**: 1-hour cache duration
+- **Gzip Compression**: Automatic compression for all responses
+- **Parallel Processing**: Concurrent batch operations
+- **Smart Resizing**: Only resizes when necessary
+
+### Formats Supported
+- JPEG, PNG, WebP, GIF
+- Base64 encoding for easy embedding
+- Binary file downloads
+- JSON metadata responses
+
+## 📱 Perfect for Mobile Apps
+
+### Single Request Examples
+```
+GET /img/base64/thumbnail/user-avatar
+GET /img/mobile/hero-image?quality=85
+```
+
+### Batch Request Example
+```
+POST /img/batch/mobile?quality=85
+{
+  ""filePaths"": [""photo1"", ""photo2"", ""photo3""]
+}
+```
+
+## 🔐 Authentication
+
+When enabled, authenticate via Active Directory and use JWT tokens:
+1. POST to `/api/auth/login` with your credentials
+2. Use the returned token in the `Authorization: Bearer {token}` header
+3. Refresh tokens available for long-lived sessions
+
+## 📊 Monitoring
+
+- **Health Check**: `GET /health`
+- **Response Headers**: Cache-Control headers included
+- **Comprehensive Logging**: All operations logged
+
+## 🎯 Quick Start
+
+1. Try the `/health` endpoint to verify the API is running
+2. Browse endpoints below to explore capabilities
+3. Use 'Try it out' to test endpoints interactively
+4. Check response schemas for detailed format information
+
+For complete documentation, visit the [GitHub Repository](https://github.com/yourusername/file-to-api-dotnet)
+",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "API Support",
+            Email = "support@yourcompany.com",
+            Url = new Uri("https://github.com/yourusername/file-to-api-dotnet")
+        },
+        License = new Microsoft.OpenApi.Models.OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
     });
 
     // Include XML comments
