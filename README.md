@@ -1,4 +1,4 @@
-# File to API - .NET
+# File to API - .NET (mostly modified for images)
 
 A production-ready **Image & File API** with advanced image processing capabilities, built on .NET 8. Perfect for mobile apps, web applications, and microservices architectures.
 
