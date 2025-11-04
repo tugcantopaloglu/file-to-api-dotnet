@@ -2,7 +2,7 @@
 
 A production-ready **Image & File API** with advanced image processing capabilities, built on .NET 8. Perfect for mobile apps, web applications, and microservices architectures.
 
-## 🚀 Features
+## Features
 
 ### Core Features
 - **RESTful API** for file operations (download, metadata, base64 encoding)
