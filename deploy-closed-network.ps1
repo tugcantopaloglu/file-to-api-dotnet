@@ -216,15 +216,18 @@ function New-DeploymentConfig {
 function New-DeploymentReadme {
     param([string]$ReadmePath, [string]$DeployType)
 
+    $authStatus = if ($EnableAuthentication) { "Enabled" } else { "Disabled" }
+    $buildDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
     $readme = @"
 # File & Image API - Closed Network Deployment Package
 
 ## Package Contents
 
-- **Application Files**: All compiled binaries and dependencies
-- **appsettings.Production.json**: Pre-configured settings
-- **DEPLOYMENT-GUIDE.txt**: This file
-- **run.bat** (Windows) or **run.sh** (Linux): Start script
+* **Application Files**: All compiled binaries and dependencies
+* **appsettings.Production.json**: Pre-configured settings
+* **DEPLOYMENT-GUIDE.txt**: This file
+* **run.bat** (Windows) or **run.sh** (Linux): Start script
 
 ## Deployment Type: $DeployType
 
@@ -252,44 +255,44 @@ function New-DeploymentReadme {
 Edit 'appsettings.Production.json' to customize:
 
 ### File Storage:
-- RootPath: Directory where files are stored
-- AllowedExtensions: File types allowed
+* RootPath: Directory where files are stored
+* AllowedExtensions: File types allowed
 
 ### Image Processing:
-- ThumbnailMaxWidth/Height: Thumbnail dimensions
-- MobileMaxWidth/Height: Mobile image max dimensions
-- CompressionQuality: JPEG/WebP quality (1-100)
-- CacheDurationSeconds: Response cache duration
+* ThumbnailMaxWidth/Height: Thumbnail dimensions
+* MobileMaxWidth/Height: Mobile image max dimensions
+* CompressionQuality: JPEG/WebP quality (1-100)
+* CacheDurationSeconds: Response cache duration
 
 ### Authentication (Optional):
-- Enabled: Set to true to require authentication
-- ActiveDirectory: Configure if using AD
-- JwtSettings: JWT token configuration
+* Enabled: Set to true to require authentication
+* ActiveDirectory: Configure if using AD
+* JwtSettings: JWT token configuration
 
 ## API Endpoints
 
 ### Single File Endpoints (GET):
-- GET /img/{path} - Get raw file
-- GET /img/{path}/metadata - Get file metadata
-- GET /img/base64/{path} - Get file as base64
-- GET /img/thumbnail/{path} - Get 150x150 thumbnail
-- GET /img/base64/thumbnail/{path} - Thumbnail as base64
-- GET /img/mobile/{path} - Mobile-optimized (800x800)
-- GET /img/base64/mobile/{path} - Mobile image as base64
+* GET /img/{path} - Get raw file
+* GET /img/{path}/metadata - Get file metadata
+* GET /img/base64/{path} - Get file as base64
+* GET /img/thumbnail/{path} - Get 150x150 thumbnail
+* GET /img/base64/thumbnail/{path} - Thumbnail as base64
+* GET /img/mobile/{path} - Mobile-optimized (800x800)
+* GET /img/base64/mobile/{path} - Mobile image as base64
 
 ### Batch Endpoints (POST):
-- POST /img/batch/base64 - Multiple files as base64
-- POST /img/batch/thumbnail - Multiple thumbnails
-- POST /img/batch/mobile - Multiple mobile images
+* POST /img/batch/base64 - Multiple files as base64
+* POST /img/batch/thumbnail - Multiple thumbnails
+* POST /img/batch/mobile - Multiple mobile images
 
 ### System Endpoints:
-- GET /health - Health check
-- GET /swagger - API documentation
+* GET /health - Health check
+* GET /swagger - API documentation
 
 ## File Organization
 
 Place your files in the configured RootPath directory:
-```
+``````
 Files/
 ├── user1/
 │   ├── avatar.jpg
@@ -298,11 +301,11 @@ Files/
 │   └── profile.jpg
 └── shared/
     └── logo.png
-```
+``````
 
 Access files via API:
-- /img/user1/avatar.jpg
-- /img/user1/avatar (extension auto-detected)
+* /img/user1/avatar.jpg
+* /img/user1/avatar (extension auto-detected)
 
 ## Network Requirements
 
@@ -317,14 +320,14 @@ Access files via API:
 Edit run script and change port (default: 5000)
 
 ### Cannot access API:
-- Check firewall settings
-- Verify the service is running
-- Check logs in 'logs/' directory
+* Check firewall settings
+* Verify the service is running
+* Check logs in 'logs/' directory
 
 ### Files not found:
-- Verify RootPath in configuration
-- Check file permissions
-- Ensure files exist in correct directory
+* Verify RootPath in configuration
+* Check file permissions
+* Ensure files exist in correct directory
 
 ## Support
 
@@ -332,11 +335,11 @@ For issues or questions, refer to README.md in the source repository.
 
 ## Package Information
 
-- Build Date: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-- Deployment Type: $DeployType
-- Self-Contained: $SelfContained
-- Authentication: $($EnableAuthentication -eq $true ? "Enabled" : "Disabled")
-- File Storage Path: $FileStoragePath
+* Build Date: $buildDate
+* Deployment Type: $DeployType
+* Self-Contained: $SelfContained
+* Authentication: $authStatus
+* File Storage Path: $FileStoragePath
 
 "@
 
