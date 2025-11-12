@@ -308,100 +308,100 @@ public class FilesController : ControllerBase
         }
     }
 
-    [HttpPost("batch/base64")]
-    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request" })]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetBatchFilesAsBase64([FromBody] BatchFileRequest request)
-    {
-        if (request?.FilePaths == null || !request.FilePaths.Any())
-        {
-            return BadRequest(new { message = "File paths are required" });
-        }
+    //[HttpPost("batch/base64")]
+    //[ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request" })]
+    //[ProducesResponseType(StatusCodes.Status200OK)]
+    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+    //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    //public async Task<IActionResult> GetBatchFilesAsBase64([FromBody] BatchFileRequest request)
+    //{
+    //    if (request?.FilePaths == null || !request.FilePaths.Any())
+    //    {
+    //        return BadRequest(new { message = "File paths are required" });
+    //    }
 
-        try
-        {
-            var result = await _fileService.GetBatchFilesAsBase64Async(request.FilePaths);
+    //    try
+    //    {
+    //        var result = await _fileService.GetBatchFilesAsBase64Async(request.FilePaths);
 
-            if (_imageSettings.EnableResponseCaching)
-            {
-                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
-            }
+    //        if (_imageSettings.EnableResponseCaching)
+    //        {
+    //            Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+    //        }
 
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving batch files");
-            return StatusCode(500, "An error occurred while retrieving batch files");
-        }
-    }
-
-
-    [HttpPost("batch/thumbnail")]
-    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request" })]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetBatchThumbnailsAsBase64([FromBody] BatchFileRequest request)
-    {
-        if (request?.FilePaths == null || !request.FilePaths.Any())
-        {
-            return BadRequest(new { message = "File paths are required" });
-        }
-
-        try
-        {
-            var result = await _fileService.GetBatchThumbnailsAsBase64Async(request.FilePaths);
-
-            if (_imageSettings.EnableResponseCaching)
-            {
-                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
-            }
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving batch thumbnails");
-            return StatusCode(500, "An error occurred while retrieving batch thumbnails");
-        }
-    }
+    //        return Ok(result);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Error retrieving batch files");
+    //        return StatusCode(500, "An error occurred while retrieving batch files");
+    //    }
+    //}
 
 
-    [HttpPost("batch/mobile")]
-    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request", "maxWidth", "maxHeight", "quality" })]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetBatchMobileImagesAsBase64([FromBody] BatchFileRequest request, [FromQuery] int? maxWidth, [FromQuery] int? maxHeight, [FromQuery] int? quality)
-    {
-        if (request?.FilePaths == null || !request.FilePaths.Any())
-        {
-            return BadRequest(new { message = "File paths are required" });
-        }
+    //[HttpPost("batch/thumbnail")]
+    //[ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request" })]
+    //[ProducesResponseType(StatusCodes.Status200OK)]
+    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+    //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    //public async Task<IActionResult> GetBatchThumbnailsAsBase64([FromBody] BatchFileRequest request)
+    //{
+    //    if (request?.FilePaths == null || !request.FilePaths.Any())
+    //    {
+    //        return BadRequest(new { message = "File paths are required" });
+    //    }
 
-        if (quality.HasValue && (quality.Value < 1 || quality.Value > 100))
-        {
-            return BadRequest(new { message = "Quality must be between 1 and 100" });
-        }
+    //    try
+    //    {
+    //        var result = await _fileService.GetBatchThumbnailsAsBase64Async(request.FilePaths);
 
-        try
-        {
-            var result = await _fileService.GetBatchMobileImagesAsBase64Async(request.FilePaths, maxWidth, maxHeight, quality);
+    //        if (_imageSettings.EnableResponseCaching)
+    //        {
+    //            Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+    //        }
 
-            if (_imageSettings.EnableResponseCaching)
-            {
-                Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
-            }
+    //        return Ok(result);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Error retrieving batch thumbnails");
+    //        return StatusCode(500, "An error occurred while retrieving batch thumbnails");
+    //    }
+    //}
 
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving batch mobile images");
-            return StatusCode(500, "An error occurred while retrieving batch mobile images");
-        }
-    }
+
+    //[HttpPost("batch/mobile")]
+    //[ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "request", "maxWidth", "maxHeight", "quality" })]
+    //[ProducesResponseType(StatusCodes.Status200OK)]
+    //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+    //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    //public async Task<IActionResult> GetBatchMobileImagesAsBase64([FromBody] BatchFileRequest request, [FromQuery] int? maxWidth, [FromQuery] int? maxHeight, [FromQuery] int? quality)
+    //{
+    //    if (request?.FilePaths == null || !request.FilePaths.Any())
+    //    {
+    //        return BadRequest(new { message = "File paths are required" });
+    //    }
+
+    //    if (quality.HasValue && (quality.Value < 1 || quality.Value > 100))
+    //    {
+    //        return BadRequest(new { message = "Quality must be between 1 and 100" });
+    //    }
+
+    //    try
+    //    {
+    //        var result = await _fileService.GetBatchMobileImagesAsBase64Async(request.FilePaths, maxWidth, maxHeight, quality);
+
+    //        if (_imageSettings.EnableResponseCaching)
+    //        {
+    //            Response.Headers.CacheControl = $"public, max-age={_imageSettings.CacheDurationSeconds}";
+    //        }
+
+    //        return Ok(result);
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Error retrieving batch mobile images");
+    //        return StatusCode(500, "An error occurred while retrieving batch mobile images");
+    //    }
+    //}
 }

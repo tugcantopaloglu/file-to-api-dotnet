@@ -127,19 +127,7 @@ When enabled, authenticate via Active Directory and use JWT tokens:
 3. Use 'Try it out' to test endpoints interactively
 4. Check response schemas for detailed format information
 
-For complete documentation, visit the [GitHub Repository](https://github.com/tugcantopaloglu/file-to-api-dotnet)
-",
-        Contact = new Microsoft.OpenApi.Models.OpenApiContact
-        {
-            Name = "API Support",
-            Email = "support@yourcompany.com",
-            Url = new Uri("https://github.com/tugcantopaloglu/file-to-api-dotnet")
-        },
-        License = new Microsoft.OpenApi.Models.OpenApiLicense
-        {
-            Name = "MIT License",
-            Url = new Uri("https://opensource.org/licenses/MIT")
-        }
+"
     });
 
     // Include XML comments
