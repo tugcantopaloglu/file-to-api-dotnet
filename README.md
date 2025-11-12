@@ -15,6 +15,7 @@ A production-ready **Image & File API** with advanced image processing capabilit
 - **Health Checks** - Monitoring endpoints for load balancers
 
 ### Security & Authentication
+- **Flexible Authentication Modes** - Disabled, Anonymous, or Full AD/JWT auth
 - **JWT Authentication** - Token-based security
 - **Active Directory Integration** - LDAP authentication
 - **Rate Limiting** - Protection against abuse
@@ -107,7 +108,8 @@ Response:
 ```json
 {
   "Authentication": {
-    "Enabled": false
+    "Enabled": false,
+    "AllowAnonymous": false
   },
   "Authorization": {
     "AllowedUsers": ["user1", "user2"],
@@ -145,6 +147,46 @@ Response:
     "AllowAnyMethod": true,
     "AllowAnyHeader": true,
     "AllowCredentials": false
+  }
+}
+```
+
+### Authentication Modes
+
+The API supports three authentication modes:
+
+#### 1. **Disabled Mode** (Default)
+No authentication required. Perfect for development or trusted networks.
+```json
+{
+  "Authentication": {
+    "Enabled": false,
+    "AllowAnonymous": false
+  }
+}
+```
+
+#### 2. **Anonymous Mode**
+Authentication system is active but doesn't require credentials. Useful for:
+- Testing authentication flows without AD
+- Development environments
+- Transitioning from no-auth to full-auth
+```json
+{
+  "Authentication": {
+    "Enabled": true,
+    "AllowAnonymous": true
+  }
+}
+```
+
+#### 3. **Full Authentication Mode**
+Requires Active Directory/JWT authentication for all endpoints.
+```json
+{
+  "Authentication": {
+    "Enabled": true,
+    "AllowAnonymous": false
   }
 }
 ```

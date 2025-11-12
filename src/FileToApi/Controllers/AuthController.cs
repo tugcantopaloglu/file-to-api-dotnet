@@ -183,7 +183,9 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             authenticationEnabled = _authSettings.Enabled,
-            authType = "ActiveDirectory"
+            allowAnonymous = _authSettings.AllowAnonymous,
+            authType = "ActiveDirectory",
+            requiresAuth = _authSettings.Enabled && !_authSettings.AllowAnonymous
         });
     }
 }

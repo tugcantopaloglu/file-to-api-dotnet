@@ -15,7 +15,8 @@ public class ConditionalAuthorizeAttribute : Attribute, IAsyncAuthorizationFilte
         var authSettings = context.HttpContext.RequestServices
             .GetRequiredService<IOptions<AuthenticationSettings>>().Value;
 
-        if (!authSettings.Enabled)
+        // Allow anonymous access if authentication is disabled or AllowAnonymous is enabled
+        if (!authSettings.Enabled || authSettings.AllowAnonymous)
         {
             return;
         }
