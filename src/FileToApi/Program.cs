@@ -73,11 +73,6 @@ builder.Services.AddSwaggerGen(c =>
         Title = "File & Image API",
         Version = "v1.0.0",
         Description = @"
-# Advanced Image & File API
-
-A production-ready REST API with powerful image processing capabilities, perfect for mobile apps and web applications.
-
-## 🚀 Key Features
 
 ### Image Processing
 - **Thumbnails**: 150x150px optimized previews
@@ -98,8 +93,6 @@ A production-ready REST API with powerful image processing capabilities, perfect
 - Binary file downloads
 - JSON metadata responses
 
-## 📱 Perfect for Mobile Apps
-
 ### Single Request Examples
 ```
 GET /img/base64/thumbnail/user-avatar
@@ -114,20 +107,20 @@ POST /img/batch/mobile?quality=85
 }
 ```
 
-## 🔐 Authentication
+## Authentication
 
 When enabled, authenticate via Active Directory and use JWT tokens:
 1. POST to `/api/auth/login` with your credentials
 2. Use the returned token in the `Authorization: Bearer {token}` header
 3. Refresh tokens available for long-lived sessions
 
-## 📊 Monitoring
+## Monitoring
 
 - **Health Check**: `GET /health`
 - **Response Headers**: Cache-Control headers included
 - **Comprehensive Logging**: All operations logged
 
-## 🎯 Quick Start
+## Quick Start
 
 1. Try the `/health` endpoint to verify the API is running
 2. Browse endpoints below to explore capabilities
